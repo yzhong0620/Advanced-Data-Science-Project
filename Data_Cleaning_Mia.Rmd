@@ -1,0 +1,29 @@
+---
+title: "Data Cleaning - Mia"
+author: "Mia Rothberg"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
+
+```{r}
+#data source: https://catalog.data.gov/dataset/asthma-deaths-by-county
+asthma_deaths_CA <- read_csv("asthma_deaths.csv")
+
+#data source: https://catalog.data.gov/dataset/asthma-emergency-department-visit-rates 
+asthma_emergency_visits <- read_csv("asthma-emergency-department-visit-rates-by-county-2015_2019.csv")
+
+#https://statecancerprofiles.cancer.gov/incidencerates/index.php?stateFIPS=06&areatype=county&cancer=055&race=00&sex=2&age=001&stage=999&year=0&type=incd&sortVariableName=rate&sortOrder=default&output=0#results
+#not reading in right but the file looks fine
+cancer <- read_csv("breast_cancer_women_5yravg.csv")
+```
+
