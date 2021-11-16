@@ -85,3 +85,13 @@ ozone <- rbind(ozone2017, ozone2018, ozone2019) %>%
   group_by(COUNTY, Year) %>% 
   summarise(annual_mean_ozone = mean(`Daily Max 8-hour Ozone Concentration`))
 ```
+
+```{r}
+pollutant2 <- left_join(ozone, pb, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant3 <- left_join(pm25, pollutant2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant4 <- left_join(pollutant3, pm10, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant5 <- left_join(pollutant4, co, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant6 <- left_join(pollutant5, no2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant7 <- left_join(pollutant6, so2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+```
+
