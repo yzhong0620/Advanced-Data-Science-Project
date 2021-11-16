@@ -55,7 +55,9 @@ illness_data <- cancer_clean %>%
   left_join(asthma_deaths_CA_clean, by = c("County" = "COUNTY")) %>% 
   left_join(asthma_er_clean, by = c("County" = "COUNTY")) %>% 
   mutate(cancer_incidence_rate = `Age-Adjusted Incidence Rate([rate note]) - cases per 100,000`,
-         asthma_deaths = `NUMBER OF DEATHS`)
+         asthma_deaths = `NUMBER OF DEATHS`) %>% 
+  mutate(cancer_incidence_rate = as.numeric(cancer_incidence_rate)) %>% 
+  select(County, FIPS, asthma_er_avg, cancer_incidence_rate, asthma_deaths)
 ```
 
 ```{r}
@@ -137,8 +139,17 @@ ozone <- rbind(ozone2017, ozone2018, ozone2019) %>%
 ```
 
 ```{r}
-data <- illness_data %>% 
-  left_join(pm25, by = c("County" = "COUNTY"))
+pollutant2 <- left_join(ozone, pb, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant3 <- left_join(pm25, pollutant2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant4 <- left_join(pollutant3, pm10, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant5 <- left_join(pollutant4, co, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant6 <- left_join(pollutant5, no2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+pollutant7 <- left_join(pollutant6, so2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
+```
+
+```{r}
+data <- pollutant7 %>% 
+  left_join(illness_data, by = c("COUNTY" = "County"))
 ```
 
 
@@ -149,6 +160,14 @@ data %>%
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title = "Asthma ER visits")
+
+data %>% 
+  filter(!(COUNTY == "California")) %>% 
+  filter(Year == 2017) %>% 
+  ggplot(aes(x = annual_mean_ozone, y = asthma_er_avg)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Asthma and Ozone")
 
 data %>% 
   filter(!(County == "California")) %>% 
