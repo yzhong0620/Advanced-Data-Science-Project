@@ -27,3 +27,40 @@ asthma_emergency_visits <- read_csv("asthma-emergency-department-visit-rates-by-
 cancer <- read_csv("breast_cancer_women_5yravg_updated.csv")
 ```
 
+```{r}
+asthma_deaths_CA_clean <- asthma_deaths_CA %>% 
+  mutate(YEARS = ifelse(str_detect(YEARS, "2014"), "2014.2016", "2017.2019")) %>% 
+  filter(YEARS == "2017.2019",
+         `AGE GROUP` == "All ages")
+
+cancer_clean <- cancer %>% 
+  mutate(County = ifelse(str_detect(County, "(7)"), substr(County, 1, nchar(County) - 3), County)) %>% 
+  mutate(County = substr(County, 1, nchar(County) - 7)) %>% 
+  mutate(County = ifelse(County == "Cal", "California", County))
+
+asthma_er_clean <- asthma_emergency_visits %>% 
+  select(-COMMENT) %>% 
+  filter(YEAR > 2016) %>% 
+  filter(`AGE GROUP` == "All ages") %>%
+  filter(STRATA == "Total population") %>% 
+  na.omit() %>% 
+  group_by(COUNTY) %>% 
+  summarize(asthma_er_avg = mean(`NUMBER OF ED VISITS`))
+ 
+```
+
+```{r}
+illness_data <- cancer_clean %>% 
+  left_join(asthma_deaths_CA_clean, by = c("County" = "COUNTY")) %>% 
+  left_join(asthma_er_clean, by = c("County" = "COUNTY")) %>% 
+  mutate(cancer_incidence_rate = `Age-Adjusted Incidence Rate([rate note]) - cases per 100,000`,
+         asthma_deaths = `NUMBER OF DEATHS`)
+```
+
+```{r}
+illness_data %>% 
+  ggplot(aes(x = cancer_incidence_rate, y = asthma_er_avg)) +
+  geom_point()
+```
+
+
