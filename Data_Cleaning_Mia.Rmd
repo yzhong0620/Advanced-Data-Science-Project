@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
+
 ```
 
 
@@ -58,9 +59,103 @@ illness_data <- cancer_clean %>%
 ```
 
 ```{r}
-illness_data %>% 
-  ggplot(aes(x = cancer_incidence_rate, y = asthma_er_avg)) +
-  geom_point()
+pm2017 <- read_csv("2017pm25.csv")
+pm2018 <- read_csv("2018pm25.csv")
+pm2019 <- read_csv("2019pm25.csv")
+
+#modified to only have one value per county
+pm25 <- rbind(pm2017, pm2018, pm2019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY) %>% 
+  summarise(mean_pm25 = mean(`Daily Mean PM2.5 Concentration`))
+```
+
+```{r}
+co2017 <- read_csv("2017co.csv")
+co2018 <- read_csv("2018co.csv")
+co2019 <- read_csv("2019co.csv")
+
+co <- rbind(co2017, co2018, co2019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_co = mean(`Daily Max 8-hour CO Concentration`))
+```
+
+```{r}
+pm2017 <- read_csv("2017pm10.csv")
+pm2018 <- read_csv("2018pm10.csv")
+pm2019 <- read_csv("2019pm10.csv")
+
+pm10 <- rbind(pm2017, pm2018, pm2019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_pm10 = mean(`Daily Mean PM10 Concentration`))
+```
+
+```{r}
+no22017 <- read_csv("2017no2.csv")
+no22018 <- read_csv("2018no2.csv")
+no22019 <- read_csv("2019no2.csv")
+
+no2 <- rbind(no22017, no22018, no22019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_no2 = mean(`Daily Max 1-hour NO2 Concentration`))
+```
+
+```{r}
+so22017 <- read_csv("2017so2.csv")
+so22018 <- read_csv("2018so2.csv")
+so22019 <- read_csv("2019so2.csv")
+
+so2 <- rbind(so22017, so22018, so22019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_so2 = mean(`Daily Max 1-hour SO2 Concentration`))
+```
+
+```{r}
+pb2017 <- read_csv("2017pb.csv")
+pb2018 <- read_csv("2018pb.csv")
+pb2019 <- read_csv("2019pb.csv")
+
+pb <- rbind(pb2017, pb2018, pb2019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_pb = mean(`Daily Mean Pb Concentration`))
+```
+
+```{r}
+ozone2017 <- read_csv("2017ozone.csv")
+ozone2018 <- read_csv("2018ozone.csv")
+ozone2019 <- read_csv("2019ozone.csv")
+
+ozone <- rbind(ozone2017, ozone2018, ozone2019) %>% 
+  mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
+  group_by(COUNTY, Year) %>% 
+  summarise(annual_mean_ozone = mean(`Daily Max 8-hour Ozone Concentration`))
+```
+
+```{r}
+data <- illness_data %>% 
+  left_join(pm25, by = c("County" = "COUNTY"))
+```
+
+
+```{r}
+data %>% 
+  filter(!(County == "California")) %>% 
+  ggplot(aes(x = mean_pm25, y = asthma_er_avg)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Asthma ER visits")
+
+data %>% 
+  filter(!(County == "California")) %>% 
+  ggplot(aes(x = mean_pm25, y = cancer_incidence_rate)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Cancer")
 ```
 
 
