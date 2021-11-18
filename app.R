@@ -42,7 +42,7 @@ server <- function(input, output) {
       ggplot(aes(x = .data[[pollutant]], y = .data[[disease]])) +
       geom_point() +
       geom_smooth(method = "lm") +
-      labs(title = "disease vs pollutant", x = "", y = "")
+      labs(title = "disease vs pollutant")
   })
 }
 
