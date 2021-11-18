@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(haven)
 
 ```
 
@@ -177,4 +178,23 @@ data %>%
   labs(title = "Cancer")
 ```
 
+
+```{r}
+california_deaths <- read_csv("2021-04-14_deaths_final_2014_2019_county_year_sup.csv")
+```
+
+
+```{r}
+california_deaths_2017 <- california_deaths %>% 
+  filter(Year >= 2017,
+         Strata_Name == "Total Population") %>% 
+  group_by(County, Strata_Name, Cause, Cause_Desc) %>% 
+  summarize(deaths_per_year = mean(Count))
+```
+
+```{r}
+california_deaths_edited <- california_deaths_2017 %>% 
+  group_by(Cause_Desc) %>% 
+  summarize(count = sum(deaths_per_year))
+```
 
