@@ -68,7 +68,7 @@ pm2019 <- read_csv("2019pm25.csv")
 #modified to only have one value per county
 pm25 <- rbind(pm2017, pm2018, pm2019) %>% 
   mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
-  group_by(COUNTY) %>% 
+  group_by(COUNTY, Year) %>% 
   summarise(mean_pm25 = mean(`Daily Mean PM2.5 Concentration`))
 ```
 
@@ -155,7 +155,7 @@ data <- pollutant7 %>%
 
 ```{r}
 data %>% 
-  filter(!(County == "California")) %>% 
+  filter(!(COUNTY == "California")) %>% 
   ggplot(aes(x = mean_pm25, y = asthma_er_avg)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -170,7 +170,7 @@ data %>%
   labs(title = "Asthma and Ozone")
 
 data %>% 
-  filter(!(County == "California")) %>% 
+  filter(!(COUNTY == "California")) %>% 
   ggplot(aes(x = mean_pm25, y = cancer_incidence_rate)) +
   geom_point() +
   geom_smooth(method = "lm") +
