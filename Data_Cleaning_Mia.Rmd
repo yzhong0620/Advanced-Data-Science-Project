@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(haven)
 
 ```
 
@@ -69,7 +70,7 @@ pm2019 <- read_csv("2019pm25.csv")
 pm25 <- rbind(pm2017, pm2018, pm2019) %>% 
   mutate(Year = substr(Date,nchar(Date)-3, nchar(Date))) %>% 
   group_by(COUNTY, Year) %>% 
-  summarise(mean_pm25 = mean(`Daily Mean PM2.5 Concentration`))
+  summarise(annual_mean_pm25 = mean(`Daily Mean PM2.5 Concentration`))
 ```
 
 ```{r}
@@ -152,11 +153,14 @@ data <- pollutant7 %>%
   left_join(illness_data, by = c("COUNTY" = "County"))
 ```
 
+```{r, eval=FALSE}
+write.csv(data, "data.csv")
+```
 
 ```{r}
 data %>% 
   filter(!(COUNTY == "California")) %>% 
-  ggplot(aes(x = mean_pm25, y = asthma_er_avg)) +
+  ggplot(aes(x = annual_mean_pm25, y = asthma_er_avg)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title = "Asthma ER visits")
@@ -171,10 +175,40 @@ data %>%
 
 data %>% 
   filter(!(COUNTY == "California")) %>% 
-  ggplot(aes(x = mean_pm25, y = cancer_incidence_rate)) +
+  ggplot(aes(x = annual_mean_pm25, y = cancer_incidence_rate)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(title = "Cancer")
 ```
 
+
+```{r}
+california_deaths <- read_csv("2021-04-14_deaths_final_2014_2019_county_year_sup.csv")
+```
+
+
+```{r}
+california_deaths_2017 <- california_deaths %>% 
+  filter(Year >= 2017,
+         Strata_Name == "Total Population") %>% 
+  group_by(County, Strata_Name, Cause, Cause_Desc) %>% 
+  summarize(deaths_per_year = mean(Count))
+```
+
+```{r}
+california_deaths_edited <- california_deaths_2017 %>% 
+  group_by(Cause_Desc) %>% 
+  summarize(count = sum(deaths_per_year))
+```
+
+```{r}
+california_deaths_2017 %>% 
+  pivot_wider(names_from = Cause_Desc, values_from = deaths_per_year)
+```
+
+```{r}
+california_deaths_2017 %>% 
+  filter(Cause == "ALL") %>% 
+  right_join(data, by = c("County" = "COUNTY"))
+```
 
