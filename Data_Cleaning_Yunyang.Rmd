@@ -95,3 +95,30 @@ pollutant6 <- left_join(pollutant5, no2, by = c("Year" = "Year", "COUNTY" = "COU
 pollutant7 <- left_join(pollutant6, so2, by = c("Year" = "Year", "COUNTY" = "COUNTY"))
 ```
 
+```{r}
+data <- read_csv("data.csv")
+```
+
+```{r}
+lm(cancer_incidence_rate ~ annual_mean_pb + annual_mean_co + annual_mean_no2 + annual_mean_so2 + annual_mean_ozone + annual_mean_pm25 + annual_mean_pm10, data = data)
+```
+
+```{r}
+data %>% 
+  ggplot(aes(x = cancer_incidence_rate)) +
+  geom_density()
+
+data %>% 
+  ggplot(aes(x = asthma_er_avg)) +
+  geom_density()
+
+data %>% 
+  ggplot(aes(x = asthma_deaths)) +
+  geom_density()
+```
+
+```{r}
+data %>% 
+  drop_na()
+```
+
