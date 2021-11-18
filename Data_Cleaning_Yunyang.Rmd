@@ -117,3 +117,8 @@ data %>%
   geom_density()
 ```
 
+```{r}
+data %>% 
+  drop_na()
+```
+
