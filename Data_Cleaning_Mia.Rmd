@@ -201,3 +201,14 @@ california_deaths_edited <- california_deaths_2017 %>%
   summarize(count = sum(deaths_per_year))
 ```
 
+```{r}
+california_deaths_2017 %>% 
+  pivot_wider(names_from = Cause_Desc, values_from = deaths_per_year)
+```
+
+```{r}
+california_deaths_2017 %>% 
+  filter(Cause == "ALL") %>% 
+  right_join(data, by = c("County" = "COUNTY"))
+```
+
