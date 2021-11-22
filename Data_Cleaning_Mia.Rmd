@@ -150,7 +150,8 @@ pollutant7 <- left_join(pollutant6, so2, by = c("Year" = "Year", "COUNTY" = "COU
 
 ```{r}
 data <- pollutant7 %>% 
-  left_join(illness_data, by = c("COUNTY" = "County"))
+  left_join(illness_data, by = c("COUNTY" = "County")) %>% 
+  mutate(Year = as.double(Year))
 ```
 
 ```{r, eval=FALSE}
@@ -189,26 +190,50 @@ california_deaths <- read_csv("2021-04-14_deaths_final_2014_2019_county_year_sup
 
 ```{r}
 california_deaths_2017 <- california_deaths %>% 
-  filter(Year >= 2017,
+  drop_na(Count) %>% 
+  filter(Year > 2016,
          Strata_Name == "Total Population") %>% 
-  group_by(County, Strata_Name, Cause, Cause_Desc) %>% 
+  group_by(County, Strata_Name, Cause, Cause_Desc, Year) %>% 
   summarize(deaths_per_year = mean(Count))
 ```
 
 ```{r}
-california_deaths_edited <- california_deaths_2017 %>% 
+california_deaths_causes <- california_deaths_2017 %>% 
   group_by(Cause_Desc) %>% 
   summarize(count = sum(deaths_per_year))
 ```
 
 ```{r}
 california_deaths_2017 %>% 
+  ungroup() %>% 
+  dplyr::select(County, Cause_Desc, deaths_per_year, Year) %>% 
   pivot_wider(names_from = Cause_Desc, values_from = deaths_per_year)
 ```
 
 ```{r}
-california_deaths_2017 %>% 
+#data source: https://data.ca.gov/dataset/number-of-cancer-surgeries-volume-performed-in-california-hospitals
+cancer_hospitals <- read_csv("Cancer_in_CA_hospitals.csv")
+```
+
+```{r}
+cancer_hospitals_clean <- cancer_hospitals %>% 
+  select(Year, County, Hospital, Surgery, `# of Cases (ICD 10)`) %>% 
+  mutate(Surgery = str_glue("{Surgery}_Surgery_Ct",
+                            Surgery = Surgery)) %>% 
+  filter(Year > 2016,
+         Hospital != "Statewide") %>% 
+  group_by(Year, County, Surgery) %>% 
+  summarize(Surgery_Ct = sum(`# of Cases (ICD 10)`)) %>% 
+  spread(key = Surgery, value = Surgery_Ct)
+
+```
+
+
+
+```{r}
+data_deaths <- california_deaths_2017 %>% 
   filter(Cause == "ALL") %>% 
-  right_join(data, by = c("County" = "COUNTY"))
+  right_join(data, by = c("County" = "COUNTY", "Year" = "Year")) %>% 
+  left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year"))
 ```
 
