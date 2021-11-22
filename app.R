@@ -20,11 +20,11 @@ ui <- fluidPage(
                   choices = c("asthma_er_avg", "cancer_incidence_rate")
       ),
       selectInput(inputId = "pollutant", # to use in code
-                  label = "Pollutant:", # how it looks in UI
+                  label = "Pollutant (for scatterplot):", # how it looks in UI
                   choices = c("annual_mean_co", "annual_mean_no2", "annual_mean_ozone", "annual_mean_pb", "annual_mean_pm25", "annual_mean_pm10", "annual_mean_so2")
       ),
       selectInput(inputId = "variable", # to use in code
-                  label = "Variable:", # how it looks in UI
+                  label = "Pollutant (for density plot):", # how it looks in UI
                   choices = c("asthma_er_avg", "cancer_incidence_rate", "annual_mean_co", "annual_mean_no2", "annual_mean_ozone", "annual_mean_pb", "annual_mean_pm25", "annual_mean_pm10", "annual_mean_so2")
       )
       
