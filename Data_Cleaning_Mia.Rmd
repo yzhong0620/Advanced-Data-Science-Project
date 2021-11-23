@@ -12,8 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
-library(haven)
-
 ```
 
 
@@ -228,6 +226,35 @@ cancer_hospitals_clean <- cancer_hospitals %>%
 
 ```
 
+```{r}
+hpi <- read_csv("HPI2_MasterFile_2021-11-03.csv")
+```
+
+```{r}
+#is.na is currently replacing NAs with 1s, need to address
+hpi_county <- hpi %>% 
+  group_by(County_Name) %>% 
+  summarize(hpi2score = mean(is.na(hpi2score)),
+            economic = mean(is.na(economic)),
+            education = mean(is.na(education)), 
+            housing = mean(is.na(housing)),
+            healthcareaccess = mean(is.na(healthcareaccess)),
+            neighborhood = mean(is.na(neighborhood)),
+            pollution = mean(is.na(pollution)),
+            transportation = mean(is.na(transportation)),
+            social = mean(is.na(social)),
+            insured = mean(is.na(insured)),
+            uncrowded = mean(is.na(uncrowded)),
+            homeownership = mean(is.na(homeownership)),
+            automobile = mean(is.na(automobile)),
+            commute = mean(is.na(commute)),
+            inpreschool = mean(is.na(inpreschool)),
+            inhighschool = mean(is.na(inhighschool)),
+            bachelorsed = mean(is.na(bachelorsed)),
+            employed = mean(is.na(employed)),
+            abovepoverty = mean(is.na(abovepoverty)),
+            income = mean(is.na(income)))
+```
 
 
 ```{r}
@@ -236,4 +263,9 @@ data_deaths <- california_deaths_2017 %>%
   right_join(data, by = c("County" = "COUNTY", "Year" = "Year")) %>% 
   left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year"))
 ```
+
+```{r}
+write_csv(data_deaths, "data_deaths.csv")
+```
+
 
