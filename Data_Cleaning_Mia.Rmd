@@ -228,32 +228,57 @@ cancer_hospitals_clean <- cancer_hospitals %>%
 
 ```{r}
 hpi <- read_csv("HPI2_MasterFile_2021-11-03.csv")
+tree_canopy <- read_csv("HPI2_treecanopy.csv")
+h2o_contam <- read_csv("HPI2_h20contam.csv")
+park_access <- read_csv("HPI2_parkaccess.csv")
+supermarkets <- read_csv("HPI2_supermkts.csv")
+
 ```
 
 ```{r}
-#is.na is currently replacing NAs with 1s, need to address
 hpi_county <- hpi %>% 
   group_by(County_Name) %>% 
-  summarize(hpi2score = mean(is.na(hpi2score)),
-            economic = mean(is.na(economic)),
-            education = mean(is.na(education)), 
-            housing = mean(is.na(housing)),
-            healthcareaccess = mean(is.na(healthcareaccess)),
-            neighborhood = mean(is.na(neighborhood)),
-            pollution = mean(is.na(pollution)),
-            transportation = mean(is.na(transportation)),
-            social = mean(is.na(social)),
-            insured = mean(is.na(insured)),
-            uncrowded = mean(is.na(uncrowded)),
-            homeownership = mean(is.na(homeownership)),
-            automobile = mean(is.na(automobile)),
-            commute = mean(is.na(commute)),
-            inpreschool = mean(is.na(inpreschool)),
-            inhighschool = mean(is.na(inhighschool)),
-            bachelorsed = mean(is.na(bachelorsed)),
-            employed = mean(is.na(employed)),
-            abovepoverty = mean(is.na(abovepoverty)),
-            income = mean(is.na(income)))
+  summarize(hpi2score = mean(na.omit(hpi2score)),
+            economic = mean(na.omit(economic)),
+            education = mean(na.omit(education)), 
+            housing = mean(na.omit(housing)),
+            healthcareaccess = mean(na.omit(healthcareaccess)),
+            neighborhood = mean(na.omit(neighborhood)),
+            pollution = mean(na.omit(pollution)),
+            transportation = mean(na.omit(transportation)),
+            social = mean(na.omit(social)),
+            insured = mean(na.omit(insured)),
+            uncrowded = mean(na.omit(uncrowded)),
+            homeownership = mean(na.omit(homeownership)),
+            automobile = mean(na.omit(automobile)),
+            commute = mean(na.omit(commute)),
+            inpreschool = mean(na.omit(inpreschool)),
+            inhighschool = mean(na.omit(inhighschool)),
+            bachelorsed = mean(na.omit(bachelorsed)),
+            employed = mean(na.omit(employed)),
+            abovepoverty = mean(na.omit(abovepoverty)),
+            income = mean(na.omit(income))) 
+
+#right now doing tree canopy average - would be better if we could weight the census tracts by area
+tree_canopy <- tree_canopy %>% 
+  group_by(County_Name) %>% 
+  summarize(tree_canopy = mean(na.omit(treecanopy_pct)))
+
+#percent of urban pop residing less than half a mile from a grocery store, rural pop less than 1 mile
+supermarkets <- supermarkets %>% 
+  group_by(County_Name) %>% 
+  summarize(supermarkets = mean(na.omit(supermkts_pct)))
+
+#percent of population living within 1/2 a mile of a park beach or open area greater than 1 acre
+park_access <- park_access %>% 
+  group_by(County_Name) %>% 
+  summarize(park_access = mean(na.omit(parkaccess_pct)))
+
+# CalEnviroScreen 3.0 drinking water contaminant index for selected contaminants
+h2o_contam <- h2o_contam %>% 
+  group_by(County_Name) %>% 
+  summarize(h2o_contam = mean(na.omit(h20contam_pct)))
+
 ```
 
 
