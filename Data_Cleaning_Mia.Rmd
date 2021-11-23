@@ -14,6 +14,16 @@ library(tidyverse)
 library(dplyr)
 ```
 
+```{r}
+ca_pop <- read_csv("ca_county_est.csv") %>% 
+  mutate(County = ifelse(County == "Humbolt", "Humboldt", County))
+```
+
+```{r}
+ca_pop <- ca_pop %>% 
+  pivot_longer(!County, names_to = "Year", values_to = "Population") %>% 
+  mutate(Year = as.double(Year))
+```
 
 ```{r}
 #data source: https://catalog.data.gov/dataset/asthma-deaths-by-county
@@ -192,20 +202,17 @@ california_deaths_2017 <- california_deaths %>%
   filter(Year > 2016,
          Strata_Name == "Total Population") %>% 
   group_by(County, Strata_Name, Cause, Cause_Desc, Year) %>% 
-  summarize(deaths_per_year = mean(Count))
+  summarize(deaths_per_year = mean(Count)) %>% 
+  left_join(ca_pop, by = c("County", "Year")) %>% 
+  mutate(deaths_pp = deaths_per_year/Population)
 ```
 
-```{r}
-california_deaths_causes <- california_deaths_2017 %>% 
-  group_by(Cause_Desc) %>% 
-  summarize(count = sum(deaths_per_year))
-```
 
 ```{r}
 california_deaths_all_years <- california_deaths_2017 %>% 
   ungroup() %>% 
-  dplyr::select(County, Cause_Desc, deaths_per_year, Year) %>% 
-  pivot_wider(names_from = Cause_Desc, values_from = deaths_per_year)
+  dplyr::select(County, Cause_Desc, deaths_pp, Year) %>% 
+  pivot_wider(names_from = Cause_Desc, values_from = deaths_pp)
 ```
 
 ```{r}
@@ -215,14 +222,18 @@ cancer_hospitals <- read_csv("Cancer_in_CA_hospitals.csv")
 
 ```{r}
 cancer_hospitals_clean <- cancer_hospitals %>% 
-  select(Year, County, Hospital, Surgery, `# of Cases (ICD 10)`) %>% 
+  left_join(ca_pop, by = c("County", "Year")) %>% 
+  mutate(surgery_pp = `# of Cases (ICD 10)`/Population) %>% 
+  select(Year, County, Hospital, Surgery, surgery_pp) %>% 
   mutate(Surgery = str_glue("{Surgery}_Surgery_Ct",
                             Surgery = Surgery)) %>% 
   filter(Year > 2016,
          Hospital != "Statewide") %>% 
   group_by(Year, County, Surgery) %>% 
-  summarize(Surgery_Ct = sum(`# of Cases (ICD 10)`)) %>% 
+  summarize(Surgery_Ct = sum(surgery_pp)) %>% 
   spread(key = Surgery, value = Surgery_Ct)
+
+  cancer_hospitals_clean[is.na(cancer_hospitals_clean)] <- 0
 
 ```
 
@@ -311,6 +322,14 @@ ca_pop <- ca_pop %>%
 ```{r}
 data_deaths <- data_deaths_no_pop %>% 
   left_join(ca_pop, by = c("County" = "County", "Year" = "Year"))
+```
+
+```{r}
+data_standardized <- data_deaths %>% 
+  mutate(total_deaths_pp = `All causes (total)`/Population,
+         alzheimers_deaths_pp = `Alzheimer's disease`/Population,
+         malignant_neoplasm_deaths_pp = `Malignant neoplasms`/Population,
+         respiratory_deaths_pp = `Chronic lower respiratory diseases`/Population)
 ```
 
 
