@@ -202,7 +202,7 @@ california_deaths_causes <- california_deaths_2017 %>%
 ```
 
 ```{r}
-california_deaths_2017 %>% 
+california_deaths_all_years <- california_deaths_2017 %>% 
   ungroup() %>% 
   dplyr::select(County, Cause_Desc, deaths_per_year, Year) %>% 
   pivot_wider(names_from = Cause_Desc, values_from = deaths_per_year)
@@ -291,8 +291,8 @@ hpi_county <- hpi_county %>%
 
 
 ```{r}
-data_deaths <- california_deaths_2017 %>% 
-  filter(Cause == "ALL") %>% 
+data_deaths <- california_deaths_all_years %>% 
+  #filter(Cause == "ALL") %>% 
   right_join(data, by = c("County" = "COUNTY", "Year" = "Year")) %>% 
   left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year")) %>% 
   left_join(hpi_county, by = c("County" = "County_Name"))
