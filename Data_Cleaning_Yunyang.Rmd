@@ -10,6 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+library(tidyverse)         # for graphing and data cleaning
+library(tidymodels)        # for modeling
+library(naniar)            # for analyzing missing values
+library(vip)               # for variable importance plots
+theme_set(theme_minimal()) # Lisa's favorite theme
+```
+
+```{r}
 pm2017 <- read_csv("2017pm25.csv")
 pm2018 <- read_csv("2018pm25.csv")
 pm2019 <- read_csv("2019pm25.csv")
@@ -140,25 +148,10 @@ pollution %>%
 ```
 
 ```{r}
-pollution %>%
-  mutate(across(where(is.character), as.factor)) %>% 
-  select(where(is.factor)) %>%
-  pivot_longer(cols = everything(),
-               names_to = "variable",
-               values_to = "value") %>%
-  ggplot(aes(x = value)) +
-  geom_bar() +
-  facet_wrap(vars(variable),
-             scales = "free",
-             nrow = 4)
-```
-
-```{r}
 pollution_mod <- pollution %>%
-```
-
-```{r}
-mutate(across(where(is.character), as.factor)) %>% 
+  mutate(log_asthma = log(asthma_er_avg, base = 10)) %>% 
+  select(-asthma_er_avg) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
   add_n_miss() %>% 
   filter(n_miss_all == 0) %>% 
   select(-n_miss_all)
@@ -170,16 +163,27 @@ pollution_testing <- testing(pollution_split)
 ```
 
 ```{r}
-pollution_recipe <- recipe(asthma_er_avg ~ ., data = pollution_training) %>% 
-  step_rm(cancer_incidence_rate,
-          asthma_deaths,
-          deaths_per_year,
-          FIPS,
-          County,
+pollution_recipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
+  step_rm(County,
           Year,
-          Strata_Name,
-          Cause,
-          Cause_Desc,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
           Breast_Surgery_Ct,
@@ -225,6 +229,9 @@ penalty_grid
 ```
 
 ```{r}
+set.seed(456)
+pollution_cv <- vfold_cv(pollution_training, v = 5)
+
 pollution_lasso_tune <- 
   pollution_lasso_wf %>% 
   tune_grid(
