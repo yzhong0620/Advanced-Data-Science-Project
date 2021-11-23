@@ -14,8 +14,17 @@ library(tidyverse)         # for graphing and data cleaning
 library(tidymodels)        # for modeling
 library(naniar)            # for analyzing missing values
 library(vip)               # for variable importance plots
+library(usemodels)         # for tidymodels suggestions
+library(xgboost)           # for boosting - need to install, don't need to load
+library(doParallel)        # for parallel processing
+library(lubridate)         # for dates
+library(moderndive)        # for King County housing data
+library(patchwork)         # for combining plots nicely
+library(rmarkdown)         # for paged tables
 theme_set(theme_minimal()) # Lisa's favorite theme
 ```
+
+# Data Cleaning and Wrangling
 
 ```{r}
 pm2017 <- read_csv("2017pm25.csv")
@@ -129,6 +138,8 @@ data %>%
 data %>% 
   drop_na()
 ```
+
+# Lasso Model
 
 ```{r}
 pollution <- read.csv("data_standardized.csv")
@@ -301,5 +312,74 @@ pollution_lasso_test <- pollution_lasso_final_wf %>%
 # Metrics for model applied to test data
 pollution_lasso_test %>% 
   collect_metrics()
+```
+
+# Xgboost model
+
+```{r}
+use_xgboost(log_asthma ~ ., data = pollution_training)
+```
+
+```{r}
+boost_recipe <- 
+  recipe(formula = log_asthma ~ ., data = pollution_training) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal()) %>% 
+  step_dummy(all_nominal(), 
+             -all_outcomes())
+```
+
+```{r}
+boost_recipe %>% 
+  prep() %>% 
+  juice() 
+```
+
+```{r}
+boost_spec <- boost_tree(
+  trees = 1000,            # number of trees, T in the equations above
+  tree_depth = 2,          # max number of splits in the tree
+  min_n = 5,               # min points required for node to be further split
+  loss_reduction = 10^-5,  # when to stop - smaller = more since it only has to get a little bit better 
+  sample_size = 1,         # proportion of training data to use
+  learn_rate = tune(),     # lambda from the equations above
+  stop_iter = 50           # number of iterations w/o improvement b4 stopping
+) %>% 
+  set_engine("xgboost", colsample_bytree = 1) %>% 
+  set_mode("regression")
 ```
 
