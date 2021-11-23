@@ -122,3 +122,177 @@ data %>%
   drop_na()
 ```
 
+```{r}
+pollution <- read.csv("data_standardized.csv")
+```
+
+```{r}
+pollution %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free",
+             nrow = 5)
+```
+
+```{r}
+pollution %>%
+  mutate(across(where(is.character), as.factor)) %>% 
+  select(where(is.factor)) %>%
+  pivot_longer(cols = everything(),
+               names_to = "variable",
+               values_to = "value") %>%
+  ggplot(aes(x = value)) +
+  geom_bar() +
+  facet_wrap(vars(variable),
+             scales = "free",
+             nrow = 4)
+```
+
+```{r}
+pollution_mod <- pollution %>%
+```
+
+```{r}
+mutate(across(where(is.character), as.factor)) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+set.seed(456)
+pollution_split <- initial_split(pollution_mod, prop = .75)
+pollution_training <- training(pollution_split)
+pollution_testing <- testing(pollution_split)
+```
+
+```{r}
+pollution_recipe <- recipe(asthma_er_avg ~ ., data = pollution_training) %>% 
+  step_rm(cancer_incidence_rate,
+          asthma_deaths,
+          deaths_per_year,
+          FIPS,
+          County,
+          Year,
+          Strata_Name,
+          Cause,
+          Cause_Desc,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal()) %>% 
+  step_dummy(all_nominal(), 
+             -all_outcomes())
+```
+
+```{r}
+pollution_recipe %>% 
+  prep(pollution_training) %>%
+  juice()
+```
+
+```{r}
+pollution_lasso_mod <- 
+  linear_reg(mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_args(penalty = tune()) %>% 
+  set_mode("regression")
+```
+
+```{r}
+pollution_lasso_wf <- 
+  workflow() %>% 
+  add_recipe(pollution_recipe) %>% 
+  add_model(pollution_lasso_mod)
+```
+
+```{r}
+penalty_grid <- grid_regular(penalty(),
+                             levels = 20)
+penalty_grid 
+```
+
+```{r}
+pollution_lasso_tune <- 
+  pollution_lasso_wf %>% 
+  tune_grid(
+    resamples = pollution_cv,
+    grid = penalty_grid
+    )
+
+pollution_lasso_tune
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  select(id, .metrics) %>% 
+  unnest(.metrics) %>% 
+  filter(.metric == "rmse")
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "rmse") %>% 
+  ggplot(aes(x = penalty, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10",scales::math_format(10^.x))) +
+  labs(x = "penalty", y = "rmse")
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  show_best(metric = "rmse")
+```
+
+```{r}
+best_param <- pollution_lasso_tune %>% 
+  select_best(metric = "rmse")
+best_param
+```
+
+```{r}
+one_se_param <- pollution_lasso_tune %>% 
+  select_by_one_std_err(metric = "rmse", desc(penalty))
+one_se_param
+```
+
+```{r}
+pollution_lasso_final_wf <- pollution_lasso_wf %>% 
+  finalize_workflow(one_se_param)
+pollution_lasso_final_wf
+```
+
+```{r}
+pollution_lasso_final_mod <- pollution_lasso_final_wf %>% 
+  fit(data = pollution_training)
+
+pollution_lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy() 
+```
+
+```{r}
+pollution_lasso_test <- pollution_lasso_final_wf %>% 
+  last_fit(pollution_split)
+
+# Metrics for model applied to test data
+pollution_lasso_test %>% 
+  collect_metrics()
+```
+
