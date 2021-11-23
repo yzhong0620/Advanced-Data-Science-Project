@@ -281,12 +281,21 @@ h2o_contam <- h2o_contam %>%
 
 ```
 
+```{r}
+hpi_county <- hpi_county %>% 
+  left_join(tree_canopy, by = "County_Name") %>% 
+  left_join(supermarkets, by = "County_Name") %>% 
+  left_join(park_access, by = "County_Name") %>% 
+  left_join(h2o_contam, by = "County_Name")
+```
+
 
 ```{r}
 data_deaths <- california_deaths_2017 %>% 
   filter(Cause == "ALL") %>% 
   right_join(data, by = c("County" = "COUNTY", "Year" = "Year")) %>% 
-  left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year"))
+  left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year")) %>% 
+  left_join(hpi_county, by = c("County" = "County_Name"))
 ```
 
 ```{r}
