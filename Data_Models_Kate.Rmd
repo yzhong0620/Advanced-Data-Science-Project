@@ -1,0 +1,132 @@
+---
+title: "Data_Models_Kate"
+author: "Kate Seeger"
+date: "11/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)         # for graphing and data cleaning
+library(tidymodels)        # for modeling
+library(naniar)            # for analyzing missing values
+library(vip)               # for variable importance plots
+library(usemodels)         # for tidymodels suggestions
+library(xgboost)           # for boosting - need to install, don't need to load
+library(doParallel)        # for parallel processing
+library(lubridate)         # for dates
+library(moderndive)        # for King County housing data
+library(patchwork)         # for combining plots nicely
+library(rmarkdown)         # for paged tables
+theme_set(theme_minimal()) # Lisa's favorite theme
+```
+
+
+```{r}
+pollution_rfmod <- read.csv("data_standardized.csv")
+```
+
+```{r}
+pollution_rfmod %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free", 
+             nrow = 5)
+
+```
+```{r}
+#random forest pre-processing 
+pollution_rf <- pollution_rfmod %>%
+  mutate(log_asthma = log(asthma_er_avg, base = 10)) %>% 
+  select(-asthma_er_avg) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+```
+
+
+```{r}
+set.seed(456)
+pollution_rfsplit <- initial_split(pollution_rf, prop = .75)
+pollution_rftraining <- training(pollution_rfsplit)
+pollution_rftesting <- testing(pollution_rfsplit)
+
+```
+
+
+```{r}
+pollution_rfrecipe <- recipe(log_asthma ~ ., data = pollution_rftraining) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal()) %>% 
+  step_dummy(all_nominal(), 
+             -all_outcomes())
+```
+
+```{r}
+pollution_rfrecipe %>% 
+  prep(pollution_rftraining) %>%
+  juice()
+```
+```{r}
+ranger_pollution <- 
+  rand_forest(mtry = 12, 
+              min_n = 10, 
+              trees = 200) %>% 
+  set_mode("regression") %>% 
+  set_engine("ranger")
+```
+
+```{r}
+pollution_rfworkflow <- 
+  workflow() %>% 
+  add_recipe(pollution_rfrecipe) %>% 
+  add_model(ranger_pollution) 
+```
+
+```{r}
+pollution_rffit <- pollution_rfworkflow %>% 
+  fit(pollution_rftraining)
+
+pollution_rffit
+```
+
