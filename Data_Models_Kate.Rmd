@@ -129,4 +129,29 @@ pollution_rffit <- pollution_rfworkflow %>%
 
 pollution_rffit
 ```
+```{r}
+# OOB error (MSE) ... yeah, it took me a while to find that.
+pollution_rffit$fit$fit$fit$prediction.error
+
+#OOB RMSE
+sqrt(pollution_rffit$fit$fit$fit$prediction.error)
+```
+
+```{r}
+set.seed(1211)
+
+airpol_cv <- vfold_cv(pollution_rftraining, v = 5) 
+
+metric <- metric_set(rmse) 
+ctrl_res <- control_stack_resamples() 
+
+pollution_rfcv <- pollution_rfworkflow %>%
+  fit_resample(airpol_cv, 
+               metrics = metric, 
+               control = ctrl_res) 
+
+collect_metrics(pollution_rfcv)
+
+
+```
 
