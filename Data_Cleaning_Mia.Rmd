@@ -291,12 +291,28 @@ hpi_county <- hpi_county %>%
 
 
 ```{r}
-data_deaths <- california_deaths_all_years %>% 
+data_deaths_no_pop <- california_deaths_all_years %>% 
   #filter(Cause == "ALL") %>% 
   right_join(data, by = c("County" = "COUNTY", "Year" = "Year")) %>% 
   left_join(cancer_hospitals_clean, by = c("County" = "County", "Year" = "Year")) %>% 
   left_join(hpi_county, by = c("County" = "County_Name"))
 ```
+
+```{r}
+ca_pop <- read_csv("ca_county_est.csv")
+```
+
+```{r}
+ca_pop <- ca_pop %>% 
+  pivot_longer(!County, names_to = "Year", values_to = "Population") %>% 
+  mutate(Year = as.double(Year))
+```
+
+```{r}
+data_deaths <- data_deaths_no_pop %>% 
+  left_join(ca_pop, by = c("County" = "County", "Year" = "Year"))
+```
+
 
 ```{r}
 write_csv(data_deaths, "data_deaths.csv")
