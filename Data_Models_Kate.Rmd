@@ -146,15 +146,25 @@ airpol_cv <- vfold_cv(pollution_rftraining, v = 5)
 #Tune Model 
 
 # tune model
-pollution_rtTUNE <- 
+pollution_rfTUNE <- 
   pollution_rfworkflow %>% 
   tune_grid(
     resamples = airpol_cv,
     grid = rf_penalty_grid
   )
+
+best_rmse <- 
+  pollution_rfTUNE %>%
+  select_best(metric = "rmse")
+
+best_rmse
+
+pol_rfFinal <- pollution_rfworkflow %>%
+  finalize_workflow(best_rmse) %>%
+  fit(data = pollution_rftraining)
 ```
 
-
+******* DO WE EVEN NEED THIS ******** 
 
 ```{r}
 pollution_rffit <- pollution_rfworkflow %>% 
