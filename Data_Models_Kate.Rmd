@@ -14,6 +14,10 @@ library(tidyverse)         # for graphing and data cleaning
 library(tidymodels)        # for modeling
 library(naniar)            # for analyzing missing values
 library(vip)               # for variable importance plots
+library(stacks)            # for stacking models
+library(glmnet)            # for regularized regression, including LASSO
+library(ranger)            # for random forest model
+library(kknn)              # for knn model
 library(usemodels)         # for tidymodels suggestions
 library(xgboost)           # for boosting - need to install, don't need to load
 library(doParallel)        # for parallel processing
@@ -42,6 +46,7 @@ pollution_rfmod %>%
              nrow = 5)
 
 ```
+
 ```{r}
 #random forest pre-processing 
 pollution_rf <- pollution_rfmod %>%
@@ -146,7 +151,7 @@ metric <- metric_set(rmse)
 ctrl_res <- control_stack_resamples() 
 
 pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resample(airpol_cv, 
+  fit_resamples(airpol_cv, 
                metrics = metric, 
                control = ctrl_res) 
 

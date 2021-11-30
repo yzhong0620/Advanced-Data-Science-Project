@@ -358,7 +358,7 @@ boost_recipe <-
   step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
   step_zv(all_predictors()) %>% 
   step_normalize(all_predictors(), 
-                 -all_nomial())
+                 -all_nominal())
 ```
 
 ```{r}
@@ -379,5 +379,100 @@ boost_spec <- boost_tree(
 ) %>% 
   set_engine("xgboost", colsample_bytree = 1) %>% 
   set_mode("regression")
+```
+
+```{r}
+boost_grid <- grid_regular(learn_rate(),
+                           levels = 10)
+boost_grid
+```
+
+```{r}
+boost_wf <- workflow() %>% 
+  add_recipe(boost_recipe) %>%
+  add_model(boost_spec) 
+```
+
+```{r}
+set.seed(456)
+val_split <- validation_split(pollution_training, 
+                              prop = .6)
+val_split
+```
+
+```{r}
+set.seed(456)
+registerDoParallel()
+
+boost_tune <- tune_grid(
+  boost_wf, 
+  val_split,
+  grid = boost_grid,
+  control = control_grid(save_pred = TRUE)
+)
+```
+
+```{r}
+collect_metrics(boost_tune)
+```
+
+```{r}
+collect_metrics(boost_tune) %>% 
+  filter(.metric == "rmse") %>% 
+  ggplot(aes(x = learn_rate, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10() +
+  labs(y = "rmse") +
+  theme_minimal()
+```
+
+```{r}
+best_lr <- select_best(boost_tune, "rmse")
+best_lr
+```
+
+```{r}
+# finalize workflow
+final_boost_wf <- finalize_workflow(
+  boost_wf,
+  best_lr
+)
+
+# fit final
+final_boost <- final_boost_wf %>% 
+  fit(data =pollution_training)
+```
+
+```{r}
+final_boost %>% 
+  pull_workflow_fit() %>%
+  vip(geom = "col")
+```
+
+```{r}
+# Use model on test data
+test_preds <- pollution_testing %>% 
+  bind_cols(predict(final_boost, new_data = pollution_testing)) 
+
+# Compute test rmse
+test_preds %>% 
+  summarize(rmse = sqrt(mean((log_asthma - .pred)^2))) %>% 
+  pull(rmse)
+```
+
+```{r}
+# Graph results
+test_preds %>% 
+  ggplot(aes(x = log_asthma,
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
 ```
 
