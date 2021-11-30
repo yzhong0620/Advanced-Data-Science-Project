@@ -39,6 +39,28 @@ outcomes <- data %>%
 
 years <- c(2017, 2018, 2019)
 
+
+#reorder column order for coordinates
+col_order <- c("Longitude", "Latitude")
+
+coordinates3 <- coordinates %>% 
+  mutate(Longitude = Longitude * -1) %>% 
+  select(-County)
+
+coordinates2 <- coordinates3[, col_order]
+
+transformed_data <- usmap_transform(coordinates2) 
+
+transformed_data_with_data <- data_with_coordinates %>% 
+  left_join(transformed_data, by = "Latitude")
+
+
+#trying to transform data for points like some people say you need to but still doesn't work
+transformed_data <- usmap_transform(coordinates2) 
+
+transformed_data_with_data <- data_with_coordinates %>% 
+  left_join(transformed_data, by = "Latitude")
+
 ui <- fluidPage(
   theme = bs_theme(primary = "#ADD8E6", 
                    secondary = "#FFEBCD", 
@@ -50,11 +72,11 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      selectInput(inputId = "disease", # to use in code
+      selectInput(inputId = "predictor", # to use in code
                   label = "Predictor:", # how it looks in UI
                   choices = predictors
       ),
-      selectInput(inputId = "pollutant", # to use in code
+      selectInput(inputId = "outcome", # to use in code
                   label = "Outcome (for scatterplot):", # how it looks in UI
                   choices = outcomes
       ),
@@ -76,41 +98,40 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   output$line_graph <- renderPlot({
-    disease <- input$disease
-    pollutant <- input$pollutant
+    predictor <- input$predictor
+    outcome <- input$outcome
     data %>% 
      # filter(!(COUNTY == "California")) %>% 
-      ggplot(aes(x = .data[[disease]], y = .data[[pollutant]])) +
+      ggplot(aes(x = .data[[predictor]], y = .data[[outcome]])) +
       geom_point() +
       geom_smooth(method = "lm") +
       theme_minimal() +
-      labs(title = "disease vs pollutant")
+      labs(title = "predictor vs outcome")
   })
   
   output$density_plot <- renderPlot({
-    pollutant <- input$pollutant
+    outcome <- input$outcome
     data %>% 
       #filter(!(COUNTY == "California")) %>% 
-      ggplot(aes(x = .data[[pollutant]])) +
+      ggplot(aes(x = .data[[outcome]])) +
       geom_density() +
       theme_minimal()
   })
   
   output$map <- renderPlot({
-   # year <- input$year
-    #disease <- input$disease
-    #pollutant <- input$pollutant
    data_year <- data %>% 
       filter(Year == input$year)
     
      #mutate(outcome_variable = .data[[disease]]) %>% 
-      plot_usmap(regions = "counties", include = "CA", data = data_2017, values = input$disease) + 
+      plot_usmap(regions = "counties", include = "CA", data = data_2017, values = input$outcome) + 
       labs(title = "US Counties",
            subtitle = "This map is supposed to have points but isn't working currently.") + 
       theme(legend.position = "right") +
       scale_fill_continuous(
-        low = "lightblue", high = "navy", name = "Heart Disease Deaths \nper Person (2017)", label = scales::comma
-      ) 
+        low = "lightblue", high = "navy", name = "Outcome in selected year", label = scales::comma
+      ) + 
+        geom_point(data = transformed_data_with_data, aes(x = Longitude.1, y = Latitude.1, size = .data[[input$predictor]]),
+                   color = "red", alpha = 0.25) 
   })
 }
 

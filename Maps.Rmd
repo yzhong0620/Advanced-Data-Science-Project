@@ -1,0 +1,93 @@
+---
+title: "Maps"
+author: "Mia Rothberg"
+date: "11/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(usmap)
+library(ggplot2)
+library(tidyverse)
+library(plotly)
+
+data <- read_csv("data_standardized.csv") %>% 
+  mutate(fips = FIPS) %>% 
+  select(-FIPS)
+
+coordinates <- read_csv("county_coordinates.csv")
+```
+
+```{r}
+data_with_coordinates <- data %>% 
+  left_join(coordinates, by = "County")
+```
+
+
+```{r}
+data_2017 <- data_with_coordinates %>% 
+  filter(Year == 2017)
+
+col_order <- c("Longitude", "Latitude")
+
+coordinates3 <- coordinates %>% 
+  mutate(Longitude = Longitude * -1) %>% 
+  select(-County)
+
+coordinates2 <- coordinates3[, col_order]
+
+
+#trying to transform data for points like some people say you need to but still doesn't work
+transformed_data <- usmap_transform(coordinates2) 
+
+transformed_data_with_data <- data_with_coordinates %>% 
+  left_join(transformed_data, by = "Latitude")
+
+
+map_saved <- plot_usmap(regions = "counties", include = "CA", data = data_2017, values = "Diseases of heart") + 
+  labs(title = "US Counties",
+       subtitle = "This map is supposed to have points but isn't working currently.") + 
+  theme(legend.position = "right") +
+   scale_fill_continuous(
+    low = "lightblue", high = "navy", name = "Heart Disease Deaths \nper Person (2017)", label = scales::comma
+  )  + 
+geom_point(data = transformed_data_with_data, aes(x = Longitude.1, y = Latitude.1, size = annual_mean_pb),
+            color = "red", alpha = 0.25) 
+
+ggplotly(map_saved)
+```
+
+```{r}
+data %>% 
+  ggplot(aes(x = healthcareaccess, y = `Diseases of heart`)) +
+  geom_jitter() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+library(ggmap)
+library(tmaptools)
+library(maps)
+library(ggthemes)
+
+```
+
+```{r}
+county_map <- map_data("county") %>% 
+  filter(region == "california")
+```
+
+```{r}
+data_with_coordinates %>% 
+  filter(Year == 2017) %>% 
+  ggplot(aes(fill = `Diseases of heart`)) +
+  geom_map(aes(map_id = tolower(County)), color="gray", size= .3, map = county_map) +
+  expand_limits(x = county_map$long, y = county_map$lat) + #This assures the map looks decently nice.
+  theme_map() +
+  #scale_fill_gradient2(low="red", mid="white", high = "blue", midpoint=0)+
+  geom_point(aes(x=Longitude, y=Latitude, size=annual_mean_pm25, alpha = 0.5))
+```
+
