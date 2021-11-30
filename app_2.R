@@ -70,8 +70,6 @@ ui <- fluidPage(
                                     "Segoe UI Symbol"), 
                    bootswatch = "cosmo"),
   
-  sidebarLayout(
-    sidebarPanel(
       selectInput(inputId = "predictor", # to use in code
                   label = "Predictor:", # how it looks in UI
                   choices = predictors
@@ -83,16 +81,12 @@ ui <- fluidPage(
       selectInput(inputId = "year", # to use in code
                   label = "Year (for map):", # how it looks in UI
                   choices = years
-      )
-      
-    ),
-    
-    mainPanel(
-      plotOutput(outputId = "line_graph"),
-      plotOutput(outputId = "density_plot"),
-      plotOutput(outputId = "map")
+      ),
+      submitButton(text = "Create plots"), 
+      tabsetPanel(tabPanel("Line Graph", plotOutput("line_graph")),
+                  tabPanel("Density Plot", plotOutput("density_plot")),
+                  tabPanel("Graph", plotOutput("map"))
     )
-  )
 )
 
 server <- function(input, output) {
