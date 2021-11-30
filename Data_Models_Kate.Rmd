@@ -46,6 +46,7 @@ pollution_rfmod %>%
              nrow = 5)
 
 ```
+
 ```{r}
 #random forest pre-processing 
 pollution_rf <- pollution_rfmod %>%
@@ -113,8 +114,8 @@ pollution_rfrecipe %>%
 ```
 ```{r}
 ranger_pollution <- 
-  rand_forest(mtry = 12, 
-              min_n = 10, 
+  rand_forest(mtry = tune(), 
+              min_n = tune(), 
               trees = 200) %>% 
   set_mode("regression") %>% 
   set_engine("ranger")
@@ -126,6 +127,44 @@ pollution_rfworkflow <-
   add_recipe(pollution_rfrecipe) %>% 
   add_model(ranger_pollution) 
 ```
+
+```{r}
+#Set up penalty grid model 
+rf_penalty_grid <- grid_regular(finalize(mtry(),
+                      pollution_rftraining %>%
+                        select(-log_asthma)),
+             min_n(),
+             levels = 3)
+```
+
+
+```{r}
+set.seed(494) 
+
+airpol_cv <- vfold_cv(pollution_rftraining, v = 5) 
+
+#Tune Model 
+
+# tune model
+pollution_rfTUNE <- 
+  pollution_rfworkflow %>% 
+  tune_grid(
+    resamples = airpol_cv,
+    grid = rf_penalty_grid
+  )
+
+best_rmse <- 
+  pollution_rfTUNE %>%
+  select_best(metric = "rmse")
+
+best_rmse
+
+pol_rfFinal <- pollution_rfworkflow %>%
+  finalize_workflow(best_rmse) %>%
+  fit(data = pollution_rftraining)
+```
+
+******* DO WE EVEN NEED THIS ******** 
 
 ```{r}
 pollution_rffit <- pollution_rfworkflow %>% 
@@ -144,18 +183,20 @@ sqrt(pollution_rffit$fit$fit$fit$prediction.error)
 ```{r}
 set.seed(1211)
 
-airpol_cv <- vfold_cv(pollution_rftraining, v = 5) 
 
 metric <- metric_set(rmse) 
 ctrl_res <- control_stack_resamples() 
 
 pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resample(airpol_cv, 
+  fit_resamples(airpol_cv, 
                metrics = metric, 
                control = ctrl_res) 
 
 collect_metrics(pollution_rfcv)
 
+
+```
+```{r}
 
 ```
 

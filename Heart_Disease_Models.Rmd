@@ -183,4 +183,8 @@ pollution_lasso_test %>%
 pollution_lasso_final_mod %>% 
   pull_workflow_fit() %>% 
   vip()
+
+pollution_lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy()
 ```
