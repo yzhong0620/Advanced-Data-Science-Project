@@ -97,21 +97,20 @@ server <- function(input, output) {
   })
   
   output$map <- renderPlot({
-    year <- input$year
-    disease <- input$disease
-    pollutant <- input$pollutant
-    data %>% 
-      filter(Year == year) %>%
-     # mutate(outcome_variable = .[[disease]]) %>% 
-    plot_usmap(regions = "counties", include = "CA", values = .data[[disease]]) + #the variable that disease is representing would be in quotes - could that be why it isn't filling properly
+   # year <- input$year
+    #disease <- input$disease
+    #pollutant <- input$pollutant
+   data_year <- data %>% 
+      filter(Year == input$year)
+    
+     #mutate(outcome_variable = .data[[disease]]) %>% 
+      plot_usmap(regions = "counties", include = "CA", data = data_2017, values = input$disease) + 
       labs(title = "US Counties",
            subtitle = "This map is supposed to have points but isn't working currently.") + 
       theme(legend.position = "right") +
       scale_fill_continuous(
-        low = "lightblue", high = "navy", name = "Disease \nper Person", label = scales::comma
-      )  #+ 
-     # geom_point(data = data_2017, aes(x = as.numeric(Longitude), y = as.numeric(Latitude), size = .data[[pollutant]]),
-                 #color = "red", alpha = 0.25) 
+        low = "lightblue", high = "navy", name = "Heart Disease Deaths \nper Person (2017)", label = scales::comma
+      ) 
   })
 }
 
