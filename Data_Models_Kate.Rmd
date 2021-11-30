@@ -46,6 +46,7 @@ pollution_rfmod %>%
              nrow = 5)
 
 ```
+
 ```{r}
 #random forest pre-processing 
 pollution_rf <- pollution_rfmod %>%
@@ -150,7 +151,7 @@ metric <- metric_set(rmse)
 ctrl_res <- control_stack_resamples() 
 
 pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resample(airpol_cv, 
+  fit_resamples(airpol_cv, 
                metrics = metric, 
                control = ctrl_res) 
 
