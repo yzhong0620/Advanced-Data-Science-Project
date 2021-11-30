@@ -117,7 +117,7 @@ server <- function(input, output) {
       filter(Year == input$year)
     
      #mutate(outcome_variable = .data[[disease]]) %>% 
-      plot_usmap(regions = "counties", include = "CA", data = data_2017, values = input$outcome) + 
+      plot_usmap(regions = "counties", include = "CA", data = data_year, values = input$outcome) + 
       labs(title = "US Counties",
            subtitle = "This map is supposed to have points but isn't working currently.") + 
       theme(legend.position = "right") +
