@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)         # for graphing and data cleaning
 library(tidymodels)        # for modeling
+library(stacks)            # for stacking models
 library(naniar)            # for analyzing missing values
 library(vip)               # for variable importance plots
 library(usemodels)         # for tidymodels suggestions
@@ -240,6 +241,8 @@ penalty_grid
 ```
 
 ```{r}
+ctrl_grid <- control_stack_grid()
+
 set.seed(456)
 pollution_cv <- vfold_cv(pollution_training, v = 5)
 
@@ -247,7 +250,8 @@ pollution_lasso_tune <-
   pollution_lasso_wf %>% 
   tune_grid(
     resamples = pollution_cv,
-    grid = penalty_grid
+    grid = penalty_grid,
+    control = ctrl_grid
     )
 
 pollution_lasso_tune
@@ -404,11 +408,12 @@ val_split
 set.seed(456)
 registerDoParallel()
 
-boost_tune <- tune_grid(
-  boost_wf, 
-  val_split,
+boost_tune <- boost_wf %>% 
+  tune_grid(
+  # resamples = val_split,
+  resamples = pollution_cv,
   grid = boost_grid,
-  control = control_grid(save_pred = TRUE)
+  control = ctrl_grid
 )
 ```
 
@@ -441,7 +446,7 @@ final_boost_wf <- finalize_workflow(
 
 # fit final
 final_boost <- final_boost_wf %>% 
-  fit(data =pollution_training)
+  fit(data = pollution_training)
 ```
 
 ```{r}
@@ -465,6 +470,67 @@ test_preds %>%
 # Graph results
 test_preds %>% 
   ggplot(aes(x = log_asthma,
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
+```
+
+# Stacking
+
+```{r}
+pollution_stack <- 
+  stacks() %>% 
+  add_candidates(boost_tune) %>%
+  add_candidates(pollution_lasso_tune)
+
+as_tibble(pollution_stack)
+```
+
+```{r}
+set.seed(456)
+
+pollution_blend <- 
+  pollution_stack %>% 
+  blend_predictions()
+
+pollution_blend
+```
+
+```{r}
+pollution_blend$metrics %>% 
+  filter(.metric == "rmse")
+```
+
+```{r}
+autoplot(pollution_blend)
+```
+
+```{r}
+autoplot(pollution_blend, type = "members")
+```
+
+```{r}
+autoplot(pollution_blend, type = "weights")
+```
+
+```{r}
+pollution_final_stack <- pollution_blend %>% 
+  fit_members()
+
+pollution_final_stack
+```
+
+```{r}
+pollution_final_stack %>% 
+  predict(new_data = pollution_testing) %>% 
+  bind_cols(pollution_testing) %>% 
+  ggplot(aes(x = log_asthma, 
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
