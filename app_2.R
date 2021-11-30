@@ -1,8 +1,17 @@
 library(tidyverse)
 library(shiny)
 library(bslib)
+library(ggplot2)
+library(usmap)
 
-data <- read_csv("data_standardized.csv")
+data <- read_csv("data_standardized.csv") %>% 
+  mutate(fips = FIPS) %>% 
+  select(-FIPS)
+
+coordinates <- read_csv("county_coordinates.csv")
+
+data_with_coordinates <- data %>% 
+  left_join(coordinates, by = "County")
 
 quant_vars <- data %>% 
   select(-County) %>% 
@@ -28,6 +37,8 @@ outcomes <- data %>%
   names() %>% 
   sort()
 
+years <- c(2017, 2018, 2019)
+
 ui <- fluidPage(
   theme = bs_theme(primary = "#ADD8E6", 
                    secondary = "#FFEBCD", 
@@ -47,16 +58,17 @@ ui <- fluidPage(
                   label = "Outcome (for scatterplot):", # how it looks in UI
                   choices = outcomes
       ),
-      selectInput(inputId = "variable", # to use in code
-                  label = "Outcome (for density plot):", # how it looks in UI
-                  choices = outcomes
+      selectInput(inputId = "year", # to use in code
+                  label = "Year (for map):", # how it looks in UI
+                  choices = years
       )
       
     ),
     
     mainPanel(
       plotOutput(outputId = "line_graph"),
-      plotOutput(outputId = "density_plot")
+      plotOutput(outputId = "density_plot"),
+      plotOutput(outputId = "map")
     )
   )
 )
@@ -76,12 +88,30 @@ server <- function(input, output) {
   })
   
   output$density_plot <- renderPlot({
-    variable <- input$variable
+    pollutant <- input$pollutant
     data %>% 
       #filter(!(COUNTY == "California")) %>% 
-      ggplot(aes(x = .data[[variable]])) +
+      ggplot(aes(x = .data[[pollutant]])) +
       geom_density() +
       theme_minimal()
+  })
+  
+  output$map <- renderPlot({
+    year <- input$year
+    disease <- input$disease
+    pollutant <- input$pollutant
+    data %>% 
+      filter(Year == year) %>%
+     # mutate(outcome_variable = .[[disease]]) %>% 
+    plot_usmap(regions = "counties", include = "CA", values = .data[[disease]]) + #the variable that disease is representing would be in quotes - could that be why it isn't filling properly
+      labs(title = "US Counties",
+           subtitle = "This map is supposed to have points but isn't working currently.") + 
+      theme(legend.position = "right") +
+      scale_fill_continuous(
+        low = "lightblue", high = "navy", name = "Disease \nper Person", label = scales::comma
+      )  #+ 
+     # geom_point(data = data_2017, aes(x = as.numeric(Longitude), y = as.numeric(Latitude), size = .data[[pollutant]]),
+                 #color = "red", alpha = 0.25) 
   })
 }
 
