@@ -69,6 +69,8 @@ ui <- fluidPage(
                                     "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", 
                                     "Segoe UI Symbol"), 
                    bootswatch = "cosmo"),
+  sidebarLayout(
+    sidebarPanel(
   
       selectInput(inputId = "predictor", # to use in code
                   label = "Predictor:", # how it looks in UI
@@ -82,10 +84,14 @@ ui <- fluidPage(
                   label = "Year (for map):", # how it looks in UI
                   choices = years
       ),
-      submitButton(text = "Create plots"), 
+      submitButton(text = "Create plots")
+      ), 
+    mainPanel(
       tabsetPanel(tabPanel("Line Graph", plotOutput("line_graph")),
                   tabPanel("Density Plot", plotOutput("density_plot")),
-                  tabPanel("Graph", plotOutput("map"))
+                  tabPanel("Map", plotOutput("map"))
+      )
+    )
     )
 )
 
