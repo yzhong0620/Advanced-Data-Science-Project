@@ -1,0 +1,572 @@
+---
+title: "Data_Models_Yunyang"
+author: "Yunyang Zhong"
+date: "11/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)         # for graphing and data cleaning
+library(tidymodels)        # for modeling
+library(stacks)            # for stacking models
+library(naniar)            # for analyzing missing values
+library(vip)               # for variable importance plots
+library(usemodels)         # for tidymodels suggestions
+library(xgboost)           # for boosting - need to install, don't need to load
+library(doParallel)        # for parallel processing
+library(lubridate)         # for dates
+library(moderndive)        # for King County housing data
+library(patchwork)         # for combining plots nicely
+library(rmarkdown)         # for paged tables
+theme_set(theme_minimal()) # Lisa's favorite theme
+```
+
+# Lasso Model
+
+```{r}
+pollution <- read.csv("data_standardized.csv")
+```
+
+```{r}
+pollution %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free",
+             nrow = 5)
+
+for(i in 1:ncol(pollution)) {
+  median <- median(pollution[,i],na.rm = TRUE)
+  for (j in 1:nrow(pollution)){
+    if (is.na(pollution[j, i])){
+      pollution[j, i] <- median
+    }
+  }
+}
+```
+
+```{r}
+pollution_mod <- pollution %>%
+  mutate(log_alzheimers = log(Alzheimer.s.disease, base = 10)) %>% 
+  select(-Alzheimer.s.disease) %>%
+  mutate(across(where(is.character), as.factor)) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+set.seed(456)
+pollution_split <- initial_split(pollution_mod, prop = .75)
+pollution_training <- training(pollution_split)
+pollution_testing <- testing(pollution_split)
+```
+
+```{r}
+pollution_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          #Alzheimer.s.disease,
+          asthma_er_avg,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal()) %>% 
+  step_dummy(all_nominal(), 
+             -all_outcomes())
+```
+
+```{r}
+pollution_recipe %>% 
+  prep(pollution_training) %>%
+  juice()
+```
+
+```{r}
+pollution_lasso_mod <- 
+  linear_reg(mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_args(penalty = tune()) %>% 
+  set_mode("regression")
+```
+
+```{r}
+pollution_lasso_wf <- 
+  workflow() %>% 
+  add_recipe(pollution_recipe) %>% 
+  add_model(pollution_lasso_mod)
+```
+
+```{r}
+penalty_grid <- grid_regular(penalty(),
+                             levels = 20)
+penalty_grid 
+```
+
+```{r}
+ctrl_grid <- control_stack_grid()
+
+set.seed(456)
+pollution_cv <- vfold_cv(pollution_training, v = 5)
+
+pollution_lasso_tune <- 
+  pollution_lasso_wf %>% 
+  tune_grid(
+    resamples = pollution_cv,
+    grid = penalty_grid,
+    control = ctrl_grid
+    )
+
+pollution_lasso_tune
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  select(id, .metrics) %>% 
+  unnest(.metrics) %>% 
+  dplyr::filter(.metrics == "rmse")
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "rmse") %>% 
+  ggplot(aes(x = penalty, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10",scales::math_format(10^.x))) +
+  labs(x = "penalty", y = "rmse")
+```
+
+```{r}
+pollution_lasso_tune %>% 
+  show_best(metric = "rmse")
+```
+
+```{r}
+best_param <- pollution_lasso_tune %>% 
+  select_best(metric = "rmse")
+best_param
+```
+
+```{r}
+one_se_param <- pollution_lasso_tune %>% 
+  select_by_one_std_err(metric = "rmse", desc(penalty))
+one_se_param
+```
+
+```{r}
+pollution_lasso_final_wf <- pollution_lasso_wf %>% 
+  finalize_workflow(one_se_param)
+pollution_lasso_final_wf
+```
+
+```{r}
+pollution_lasso_final_mod <- pollution_lasso_final_wf %>% 
+  fit(data = pollution_training)
+
+pollution_lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy() 
+```
+
+
+
+```{r}
+pollution_lasso_test <- pollution_lasso_final_wf %>% 
+  last_fit(pollution_split)
+
+# Metrics for model applied to test data
+pollution_lasso_test %>% 
+  collect_metrics()
+```
+
+# Xgboost model
+
+```{r}
+use_xgboost(log_alzheimers ~ ., data = pollution_training)
+```
+
+```{r}
+boost_recipe <- 
+  recipe(formula = log_alzheimers ~ ., data = pollution_training) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          asthma_er_avg,
+          #Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal())
+```
+
+```{r}
+boost_recipe %>% 
+  prep() %>% 
+  juice() 
+```
+
+```{r}
+boost_spec <- boost_tree(
+  trees = 1000,            # number of trees, T in the equations above
+  tree_depth = 2,          # max number of splits in the tree
+  min_n = 5,               # min points required for node to be further split
+  loss_reduction = 10^-5,  # when to stop - smaller = more since it only has to get a little bit better 
+  sample_size = 1,         # proportion of training data to use
+  learn_rate = tune(),     # lambda from the equations above
+  stop_iter = 50           # number of iterations w/o improvement b4 stopping
+) %>% 
+  set_engine("xgboost", colsample_bytree = 1) %>% 
+  set_mode("regression")
+```
+
+```{r}
+boost_grid <- grid_regular(learn_rate(),
+                           levels = 10)
+boost_grid
+```
+
+```{r}
+boost_wf <- workflow() %>% 
+  add_recipe(boost_recipe) %>%
+  add_model(boost_spec) 
+```
+
+```{r}
+set.seed(456)
+val_split <- validation_split(pollution_training, 
+                              prop = .6)
+val_split
+```
+
+```{r}
+set.seed(456)
+registerDoParallel()
+
+boost_tune <- boost_wf %>% 
+  tune_grid(
+  # resamples = val_split,
+  resamples = pollution_cv,
+  grid = boost_grid,
+  control = ctrl_grid
+)
+```
+
+```{r}
+collect_metrics(boost_tune)
+```
+
+```{r}
+collect_metrics(boost_tune) %>% 
+  filter(.metric == "rmse") %>% 
+  ggplot(aes(x = learn_rate, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10() +
+  labs(y = "rmse") +
+  theme_minimal()
+```
+
+```{r}
+best_lr <- select_best(boost_tune, "rmse")
+best_lr
+```
+
+```{r}
+# finalize workflow
+final_boost_wf <- finalize_workflow(
+  boost_wf,
+  best_lr
+)
+
+# fit final
+final_boost <- final_boost_wf %>% 
+  fit(data = pollution_training)
+```
+
+```{r}
+final_boost %>% 
+  pull_workflow_fit() %>%
+  vip(geom = "col")
+```
+
+```{r}
+# Use model on test data
+test_preds <- pollution_testing %>% 
+  bind_cols(predict(final_boost, new_data = pollution_testing)) 
+
+# Compute test rmse
+test_preds %>% 
+  summarize(rmse = sqrt(mean((log_asthma - .pred)^2))) %>% 
+  pull(rmse)
+```
+
+```{r}
+# Graph results
+test_preds %>% 
+  ggplot(aes(x = log_alzheimers,
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
+```
+
+# Random Forest Model
+
+```{r}
+pollution_rfrecipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          asthma_er_avg,
+          #Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal()) %>% 
+  step_dummy(all_nominal(), 
+             -all_outcomes())
+```
+
+```{r}
+pollution_rfrecipe %>% 
+  prep(pollution_training) %>%
+  juice()
+```
+
+```{r}
+ranger_pollution <- 
+  rand_forest(mtry = tune(), 
+              min_n = tune(), 
+              trees = 200) %>% 
+  set_mode("regression") %>% 
+  set_engine("ranger")
+```
+
+```{r}
+pollution_rfworkflow <- 
+  workflow() %>% 
+  add_recipe(pollution_rfrecipe) %>% 
+  add_model(ranger_pollution) 
+```
+
+```{r}
+# Set up penalty grid model 
+rf_penalty_grid <- grid_regular(finalize(mtry(),
+                                         pollution_training %>%
+                                           select(-log_asthma)),
+                                min_n(),
+                                levels = 3)
+```
+
+
+```{r}
+set.seed(456) 
+
+pollution_cv <- vfold_cv(pollution_training, v = 5) 
+
+# Tune model
+pollution_rfTUNE <- 
+  pollution_rfworkflow %>% 
+  tune_grid(
+    resamples = pollution_cv,
+    grid = rf_penalty_grid,
+    control = ctrl_grid
+  )
+
+best_rmse <- 
+  pollution_rfTUNE %>%
+  select_best(metric = "rmse")
+
+best_rmse
+
+pol_rfFinal <- pollution_rfworkflow %>%
+  finalize_workflow(best_rmse) %>%
+  fit(data = pollution_training)
+```
+
+```{r}
+# OOB error (MSE)
+pol_rfFinal$fit$fit$fit$prediction.error
+
+# OOB RMSE
+sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
+```
+
+```{r}
+set.seed(456)
+
+metric <- metric_set(rmse) 
+ctrl_res <- control_stack_resamples() 
+
+pollution_rfcv <- pollution_rfworkflow %>%
+  fit_resamples(pollution_cv, 
+               metrics = metric, 
+               control = ctrl_res) 
+
+collect_metrics(pollution_rfTUNE)
+```
+
+# Stacking
+
+Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
+
+First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 7 lasso, and 10 boost.
+
+```{r}
+pollution_stack <- 
+  stacks() %>% 
+  add_candidates(boost_tune) %>%
+  add_candidates(pollution_lasso_tune) %>% 
+  add_candidates(pollution_rfTUNE)
+```
+
+We can look at the predictions from the candidate models in a tibble. Most of the predictions are very close to the actual values, except the first few boost models.
+
+```{r}
+as_tibble(pollution_stack)
+```
+
+```{r}
+set.seed(456)
+
+pollution_blend <- 
+  pollution_stack %>% 
+  blend_predictions()
+
+pollution_blend
+```
+
+```{r}
+pollution_blend$metrics %>% 
+  filter(.metric == "rmse")
+```
+
+```{r}
+autoplot(pollution_blend)
+```
+
+```{r}
+autoplot(pollution_blend, type = "members")
+```
+
+```{r}
+autoplot(pollution_blend, type = "weights")
+```
+
+```{r}
+pollution_final_stack <- pollution_blend %>% 
+  fit_members()
+
+pollution_final_stack
+```
+
+```{r}
+pollution_final_stack %>% 
+  predict(new_data = pollution_testing) %>% 
+  bind_cols(pollution_testing) %>% 
+  ggplot(aes(x = log_alzheimers, 
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(alzheimers)", 
+       y = "Predicted log(alzheimers)")
+```
+
