@@ -41,6 +41,15 @@ pollution %>%
   facet_wrap(vars(variable), 
              scales = "free",
              nrow = 5)
+
+for(i in 1:ncol(pollution)) {
+  median <- median(pollution[,i],na.rm = TRUE)
+  for (j in 1:nrow(pollution)){
+    if (is.na(pollution[j, i])){
+      pollution[j, i] <- median
+    }
+  }
+}
 ```
 
 ```{r}
@@ -61,7 +70,6 @@ pollution_testing <- testing(pollution_split)
 ```{r}
 pollution_recipe <- recipe(log_heart ~ ., data = pollution_training) %>% 
   step_rm(County,
-          asthma_er_avg,
           Year,
           All.causes..total.,
           Alzheimer.s.disease,
@@ -69,7 +77,7 @@ pollution_recipe <- recipe(log_heart ~ ., data = pollution_training) %>%
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
           Assault..homicide.,
-         # Diseases.of.heart,
+          #Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -91,7 +99,8 @@ pollution_recipe <- recipe(log_heart ~ ., data = pollution_training) %>%
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_normalize(all_predictors(), 
                  -all_nominal()) %>% 
   step_dummy(all_nominal(), 
@@ -222,6 +231,7 @@ boost_recipe <-
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
           Assault..homicide.,
+          #Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -243,8 +253,8 @@ boost_recipe <-
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          asthma_er_avg,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_novel(all_nominal_predictors()) %>% 
   step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
   step_zv(all_predictors()) %>% 
@@ -364,8 +374,8 @@ test_preds %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(asthma)", 
-       y = "Predicted log(asthma)")
+  labs(x = "Actual log(heart)", 
+       y = "Predicted log(heart)")
 ```
 
 # Random Forest Model
@@ -381,7 +391,6 @@ pollution_rfrecipe <- recipe(log_heart ~ ., data = pollution_training) %>%
           Diabetes.mellitus,
           Assault..homicide.,
           #Diseases.of.heart,
-          asthma_er_avg,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -403,7 +412,8 @@ pollution_rfrecipe <- recipe(log_heart ~ ., data = pollution_training) %>%
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_normalize(all_predictors(), 
                  -all_nominal()) %>% 
   step_dummy(all_nominal(), 
@@ -468,14 +478,21 @@ pol_rfFinal <- pollution_rfworkflow %>%
 ```
 
 ```{r}
-# OOB error (MSE)
-pol_rfFinal$fit$fit$fit$prediction.error
+pollution_rffit <- pollution_rfworkflow %>% 
+  fit(pollution_training)
 
-# OOB RMSE
-sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
+pollution_rffit
 ```
 
 ```{r}
+# OOB error (MSE)
+pollution_rffit$fit$fit$fit$prediction.error
+
+# OOB RMSE
+sqrt(pollution_rffit$fit$fit$fit$prediction.error)
+```
+
+```{r eval = FALSE}
 set.seed(456)
 
 metric <- metric_set(rmse) 
@@ -491,13 +508,21 @@ collect_metrics(pollution_rfTUNE)
 
 # Stacking
 
+Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
+
+First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 7 lasso, and 10 boost.
+
 ```{r}
 pollution_stack <- 
   stacks() %>% 
   add_candidates(boost_tune) %>%
   add_candidates(pollution_lasso_tune) %>% 
   add_candidates(pollution_rfTUNE)
+```
 
+We can look at the predictions from the candidate models in a tibble. Most of the predictions are very close to the actual values, except the first few boost models.
+
+```{r}
 as_tibble(pollution_stack)
 ```
 
@@ -547,19 +572,7 @@ pollution_final_stack %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(heart disease)", 
-       y = "Predicted log(heart disease)") +
-  labs(xlim = c(-2.88, 2.88),
-       ylim = c(-2.88, 2.88))
+  labs(x = "Actual log(heart)", 
+       y = "Predicted log(heart)")
 ```
-
-```{r}
-pollution_stack_test <- pollution_blend %>% 
-  last_fit(pollution_split)
-
-# Metrics for model applied to test data
-pollution_stack_test %>% 
-  collect_metrics()
-```
-
 
