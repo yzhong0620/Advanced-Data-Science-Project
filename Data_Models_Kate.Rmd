@@ -165,13 +165,6 @@ pol_rfFinal <- pollution_rfworkflow %>%
 ```
 
 
-```{r}
-
-```
-
-
-
-******* DO WE EVEN NEED THIS??? ******** 
 
 ```{r}
 pollution_rffit <- pollution_rfworkflow %>% 
@@ -201,9 +194,6 @@ pollution_rfcv <- pollution_rfworkflow %>%
 
 collect_metrics(pollution_rfcv)
 
-
-```
-```{r}
 
 ```
 
