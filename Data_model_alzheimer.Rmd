@@ -69,7 +69,7 @@ pollution_testing <- testing(pollution_split)
 ```
 
 ```{r}
-pollution_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
+pollution_alz_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
@@ -109,7 +109,7 @@ pollution_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>%
 ```
 
 ```{r}
-pollution_recipe %>% 
+pollution_alz_recipe %>% 
   prep(pollution_training) %>%
   juice()
 ```
