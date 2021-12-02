@@ -554,7 +554,19 @@ pollution_final_stack %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(asthma)", 
-       y = "Predicted log(asthma)")
+  labs(x = "Actual log(heart disease)", 
+       y = "Predicted log(heart disease)") +
+  labs(xlim = c(-2.88, 2.88),
+       ylim = c(-2.88, 2.88))
 ```
+
+```{r}
+pollution_stack_test <- pollution_blend %>% 
+  last_fit(pollution_split)
+
+# Metrics for model applied to test data
+pollution_stack_test %>% 
+  collect_metrics()
+```
+
 
