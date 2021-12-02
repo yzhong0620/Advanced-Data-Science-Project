@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r}
@@ -508,7 +508,7 @@ collect_metrics(pollution_rfTUNE)
 
 Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
 
-First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 7 lasso, and 10 boost.
+First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
 
 ```{r}
 pollution_stack <- 
@@ -524,6 +524,8 @@ We can look at the predictions from the candidate models in a tibble. Most of th
 as_tibble(pollution_stack)
 ```
 
+We want to blend the predictions from each model together to form an even better overall prediction using the blend_predictions() function. Doing this with our models, we see only 4 models have non-zero coefficients, 1 random forest, 2 lasso, and 1 boost:
+
 ```{r}
 set.seed(456)
 
@@ -534,18 +536,20 @@ pollution_blend <-
 pollution_blend
 ```
 
+Here is the rmse for the various penalty parameters:
+
 ```{r}
 pollution_blend$metrics %>% 
   filter(.metric == "rmse")
 ```
 
+We can examine some plots to see if we need to adjust the penalty parameter at all. This set of three plots with penalty on the x axis shows that we seem to have captured the smallest RMSE.
+
 ```{r}
 autoplot(pollution_blend)
 ```
 
-```{r}
-autoplot(pollution_blend, type = "members")
-```
+The blending weights for the top ensemble members are presented in this plot. The random forest has the highest weight, more than two times of the second highest weight boost has. The two lasso models have low weights.
 
 ```{r}
 autoplot(pollution_blend, type = "weights")
