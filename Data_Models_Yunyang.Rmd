@@ -548,12 +548,16 @@ The blending weights for the top ensemble members are presented in this plot. Th
 autoplot(pollution_blend, type = "weights")
 ```
 
+Finally we fit the candidate models with non-zero stacking coefficients to the full training data using fit_members() function. The numeric values of the blending weights for the top ensemble members are also printed out.
+
 ```{r}
 pollution_final_stack <- pollution_blend %>% 
   fit_members()
 
 pollution_final_stack
 ```
+
+Here is a plot comparing predicted and actual values after fitting it to the testing data. We can see the two lines are almost the same!
 
 ```{r}
 pollution_final_stack %>% 
