@@ -31,7 +31,7 @@ theme_set(theme_minimal()) # Lisa's favorite theme
 pollution <- read.csv("data_standardized.csv")
 ```
 
-```{r}
+```{r, eval=FALSE}
 pollution %>% 
   select(where(is.numeric)) %>% 
   pivot_longer(cols = everything(),
@@ -42,6 +42,13 @@ pollution %>%
   facet_wrap(vars(variable), 
              scales = "free",
              nrow = 5)
+```
+
+```{r}
+pollution %>% 
+  select(asthma_er_avg) %>% 
+  ggplot(aes(x = asthma_er_avg)) +
+  geom_histogram()
 
 for(i in 1:ncol(pollution)) {
   median <- median(pollution[,i],na.rm = TRUE)
