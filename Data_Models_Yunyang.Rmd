@@ -223,9 +223,13 @@ pollution_lasso_test %>%
 
 # Xgboost model
 
+First we used the use_xgboost() function, which gives recommendation on how to build our recipe, workflow, etc.
+
 ```{r}
 use_xgboost(log_asthma ~ ., data = pollution_training)
 ```
+
+Based on output from the use_xgboost() function and our previous recipes, we created our own recipe.
 
 ```{r}
 boost_recipe <- 
@@ -268,11 +272,7 @@ boost_recipe <-
                  -all_nominal())
 ```
 
-```{r}
-boost_recipe %>% 
-  prep() %>% 
-  juice() 
-```
+Next, we specified the model. learn_rate is the parameter we decided to tune, and we created a grid of 10 values to try in tuning for learn_rate as the following:
 
 ```{r}
 boost_spec <- boost_tree(
@@ -294,18 +294,15 @@ boost_grid <- grid_regular(learn_rate(),
 boost_grid
 ```
 
+We then put the recipe and model specification into a workflow.
+
 ```{r}
 boost_wf <- workflow() %>% 
   add_recipe(boost_recipe) %>%
   add_model(boost_spec) 
 ```
 
-```{r}
-set.seed(456)
-val_split <- validation_split(pollution_training, 
-                              prop = .6)
-val_split
-```
+The next step is to train these models. registerDoParallel() was used to speed up the process.
 
 ```{r}
 set.seed(456)
@@ -320,9 +317,13 @@ boost_tune <- boost_wf %>%
 )
 ```
 
+Here is a table summarizing the results. We can see that larger learning rates actually seem to do better.
+
 ```{r}
 collect_metrics(boost_tune)
 ```
+
+We also plotted the rmse to visually support our conclusion above.
 
 ```{r}
 collect_metrics(boost_tune) %>% 
@@ -334,6 +335,8 @@ collect_metrics(boost_tune) %>%
   labs(y = "rmse") +
   theme_minimal()
 ```
+
+Then we decided to select the best learning rate parameter and finalize the model.
 
 ```{r}
 best_lr <- select_best(boost_tune, "rmse")
@@ -352,11 +355,15 @@ final_boost <- final_boost_wf %>%
   fit(data = pollution_training)
 ```
 
+This graph tells us which predictors are the most important. It seems that supermarkets, annual_mean_no2, and homeownership have the largest influence on asthma ER visit.
+
 ```{r}
 final_boost %>% 
   pull_workflow_fit() %>%
   vip(geom = "col")
 ```
+
+The final model was also fitted to the testing data. We can see the testing rmse is 0.05, larger than the training rmse.
 
 ```{r}
 # Use model on test data
@@ -368,6 +375,8 @@ test_preds %>%
   summarize(rmse = sqrt(mean((log_asthma - .pred)^2))) %>% 
   pull(rmse)
 ```
+
+The graph below visualized the results. We can conclude that the predicted values are very close to the actual values.
 
 ```{r}
 # Graph results
@@ -506,9 +515,9 @@ collect_metrics(pollution_rfTUNE)
 
 # Stacking
 
-Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
+After we had our set of candidate models (9 random forest, 20 lasso, and 10 boost), we started stacking. We followed the process laid out on the stacks webpage.
 
-First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
+First, we created the stack. Shown by the number of columns, it removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
 
 ```{r}
 pollution_stack <- 
@@ -524,7 +533,7 @@ We can look at the predictions from the candidate models in a tibble. Most of th
 as_tibble(pollution_stack)
 ```
 
-We want to blend the predictions from each model together to form an even better overall prediction using the blend_predictions() function. Doing this with our models, we see only 4 models have non-zero coefficients, 1 random forest, 2 lasso, and 1 boost:
+We wanted to blend the predictions from each model together to form an even better overall prediction using the blend_predictions() function. Doing this with our models, we see only 4 models have non-zero coefficients, 1 random forest, 2 lasso, and 1 boost:
 
 ```{r}
 set.seed(456)
