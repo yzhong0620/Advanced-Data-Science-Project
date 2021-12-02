@@ -41,6 +41,15 @@ pollution %>%
   facet_wrap(vars(variable), 
              scales = "free",
              nrow = 5)
+
+for(i in 1:ncol(pollution)) {
+  median <- median(pollution[,i],na.rm = TRUE)
+  for (j in 1:nrow(pollution)){
+    if (is.na(pollution[j, i])){
+      pollution[j, i] <- median
+    }
+  }
+}
 ```
 
 ```{r}

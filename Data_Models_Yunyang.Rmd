@@ -476,18 +476,11 @@ pol_rfFinal <- pollution_rfworkflow %>%
 ```
 
 ```{r}
-pollution_rffit <- pollution_rfworkflow %>% 
-  fit(pollution_training)
-
-pollution_rffit
-```
-
-```{r}
 # OOB error (MSE)
-pollution_rffit$fit$fit$fit$prediction.error
+pol_rfFinal$fit$fit$fit$prediction.error
 
 # OOB RMSE
-sqrt(pollution_rffit$fit$fit$fit$prediction.error)
+sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
 ```
 
 ```{r}
