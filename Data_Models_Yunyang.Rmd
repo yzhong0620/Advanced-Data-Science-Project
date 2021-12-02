@@ -42,6 +42,15 @@ pollution %>%
   facet_wrap(vars(variable), 
              scales = "free",
              nrow = 5)
+
+for(i in 1:ncol(pollution)) {
+  median <- median(pollution[,i],na.rm = TRUE)
+  for (j in 1:nrow(pollution)){
+    if (is.na(pollution[j, i])){
+      pollution[j, i] <- median
+    }
+  }
+}
 ```
 
 ```{r}
@@ -497,13 +506,21 @@ collect_metrics(pollution_rfTUNE)
 
 # Stacking
 
+Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
+
+First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 7 lasso, and 10 boost.
+
 ```{r}
 pollution_stack <- 
   stacks() %>% 
   add_candidates(boost_tune) %>%
   add_candidates(pollution_lasso_tune) %>% 
   add_candidates(pollution_rfTUNE)
+```
 
+We can look at the predictions from the candidate models in a tibble. Most of the predictions are very close to the actual values, except the first few boost models.
+
+```{r}
 as_tibble(pollution_stack)
 ```
 
