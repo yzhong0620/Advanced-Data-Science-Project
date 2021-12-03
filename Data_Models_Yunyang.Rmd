@@ -591,3 +591,14 @@ pollution_final_stack %>%
        y = "Predicted log(asthma)")
 ```
 
+```{r}
+library(Metrics)
+```
+
+```{r}
+data_rmse <- pollution_final_stack %>% 
+  predict(new_data = pollution_testing) %>% 
+  bind_cols(pollution_testing) 
+
+rmse(data_rmse$log_asthma, data_rmse$.pred)
+```
