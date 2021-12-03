@@ -55,12 +55,6 @@ transformed_data_with_data <- data_with_coordinates %>%
   left_join(transformed_data, by = "Latitude")
 
 
-#trying to transform data for points like some people say you need to but still doesn't work
-transformed_data <- usmap_transform(coordinates2) 
-
-transformed_data_with_data <- data_with_coordinates %>% 
-  left_join(transformed_data, by = "Latitude")
-
 ui <- fluidPage(
   theme = bs_theme(primary = "#ADD8E6", 
                    secondary = "#FFEBCD", 
@@ -88,7 +82,7 @@ ui <- fluidPage(
       ), 
     mainPanel(
       tabsetPanel(tabPanel("Line Graph", plotOutput("line_graph")),
-                  tabPanel("Density Plot", plotOutput("density_plot")),
+                  tabPanel("Density Plots", plotOutput("density_plot"), plotOutput("density_plot_outcome")),
                   tabPanel("Map", plotOutput("map"))
       )
     )
@@ -114,6 +108,15 @@ server <- function(input, output) {
     data %>% 
       #filter(!(COUNTY == "California")) %>% 
       ggplot(aes(x = .data[[outcome]])) +
+      geom_density() +
+      theme_minimal()
+  })
+  
+  output$density_plot_outcome <- renderPlot({
+    predictor <- input$predictor
+    data %>% 
+      #filter(!(COUNTY == "California")) %>% 
+      ggplot(aes(x = .data[[predictor]])) +
       geom_density() +
       theme_minimal()
   })

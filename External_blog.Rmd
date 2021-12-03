@@ -1,0 +1,183 @@
+---
+title: "External Blog"
+author: "Mia Rothberg, Kate Seeger, and Yunyang Zhong"
+date: "12/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library(tidyverse)
+library(shiny)
+library(bslib)
+library(ggplot2)
+library(usmap)
+```
+
+# INTRODUCTION
+
+This project builds models to examine the relationship between various environmental and socioeconomic factors and health outcomes in California counties. A large portion of the project involved compiling the data from different publicly available sources, and some decisions on what to include and disclude were made based on the data that could be found. We ultimately chose to focus our analysis on California counties because of an abundance of publicly available data and included the years 2017, 2018, and 2019 because a variety of data had been collected in that time but were uninfluenced by the pandemic.
+
+We built models predicting four different health outcomes - asthma, breast cancer, heart disease, and Alzheimer’s disease - but the dataset we created contains more than twenty other possible health outcomes standardized on a per person basis, making it easy for anyone to create their own. 
+
+
+### Data Sources
+
+Data for this project was collected from a wide variety of sources, most of which are available through the [California Open Data Portal](http://data.ca.gov/). Below is a list of data sources we used, each of which were standardized by population:
+
+*  Death profiles by county - data on cause for each death in each county - [California Health and Human Services](https://data.chhs.ca.gov/dataset/death-profiles-by-county)
+* Cancer surgery counts by hospital - data was summarized at the county level for counts of surgeries performed for different types of cancers - [California Health and Human Services](https://data.ca.gov/dataset/number-of-cancer-surgeries-volume-performed-in-california-hospitals/resource/43735181-c35f-477e-bf50-9e43348d806a )
+* Asthma emergency department visit rates by county - [California Department of Public Health](https://catalog.data.gov/dataset/asthma-emergency-department-visit-rates)
+* Air quality data by day - data was summarized to the county and annual level - [US EPA](https://www.kaggle.com/epa/epa-historical-air-quality?select=air_quality_annual_summary)
+* California healthy places index - data on a variety of factors including tree canopy, average distance from a park, average distance from a supermarket, median income, and education level by county - [Public Health Alliance of Southern California](https://www.kaggle.com/epa/epa-historical-air-quality?select=air_quality_annual_summary) 
+
+
+### Data Exploration
+
+Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset.
+
+```{r}
+data <- read_csv("data_standardized.csv") %>% 
+  mutate(fips = FIPS) %>% 
+  select(-FIPS)
+
+coordinates <- read_csv("county_coordinates.csv")
+
+data_with_coordinates <- data %>% 
+  left_join(coordinates, by = "County")
+
+quant_vars <- data %>% 
+  select(-County) %>% 
+  names() %>% 
+  sort()
+
+predictors <- data %>% 
+  select(-County, -Year) %>% 
+  select(annual_mean_co, annual_mean_no2, annual_mean_ozone, annual_mean_pb, 
+         annual_mean_pm25, annual_mean_pm10, annual_mean_so2, hpi2score, economic, education, housing,
+         healthcareaccess, neighborhood, pollution, transportation, social, insured, uncrowded, homeownership, 
+         automobile, commute, inpreschool, inhighschool, bachelorsed, employed, abovepoverty, income, tree_canopy,
+         supermarkets, park_access, h2o_contam) %>% 
+  names() %>% 
+  sort()
+
+outcomes <- data %>% 
+  select(-County, -Year, -annual_mean_co, -annual_mean_no2, -annual_mean_ozone, -annual_mean_pb,
+         -annual_mean_pm25, -annual_mean_pm10, -annual_mean_so2, -hpi2score, -economic, -education, -housing,
+         -healthcareaccess, -neighborhood, -pollution, -transportation, -social, -insured, -uncrowded, -homeownership,
+          -automobile, -commute, -inpreschool, -inhighschool, -bachelorsed, -employed, -abovepoverty, -income, -tree_canopy,
+         -supermarkets, -park_access, -h2o_contam) %>%
+  names() %>% 
+  sort()
+
+years <- c(2017, 2018, 2019)
+
+
+#reorder column order for coordinates
+col_order <- c("Longitude", "Latitude")
+
+coordinates3 <- coordinates %>% 
+  mutate(Longitude = Longitude * -1) %>% 
+  select(-County)
+
+coordinates2 <- coordinates3[, col_order]
+
+transformed_data <- usmap_transform(coordinates2) 
+
+transformed_data_with_data <- data_with_coordinates %>% 
+  left_join(transformed_data, by = "Latitude")
+
+```
+
+```{r}
+shinyApp(
+    ui <- fluidPage(
+    theme = bs_theme(primary = "#ADD8E6", 
+                     secondary = "#FFEBCD", 
+                     base_font = list(font_google("Raleway"), "-apple-system", 
+                                      "BlinkMacSystemFont", "Segoe UI", "Helvetica Neue", "Arial", 
+                                      "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", 
+                                      "Segoe UI Symbol"), 
+                     bootswatch = "cosmo"),
+    sidebarLayout(
+      sidebarPanel(
+    
+        selectInput(inputId = "predictor", # to use in code
+                    label = "Predictor:", # how it looks in UI
+                    choices = predictors
+        ),
+        selectInput(inputId = "outcome", # to use in code
+                    label = "Outcome:", # how it looks in UI
+                    choices = outcomes
+        ),
+        selectInput(inputId = "year", # to use in code
+                    label = "Year (for map):", # how it looks in UI
+                    choices = years
+        ),
+        submitButton(text = "Create plots")
+        ), 
+      mainPanel(
+        tabsetPanel(tabPanel("Line Graph", plotOutput("line_graph")),
+                    tabPanel("Density Plot", plotOutput("density_plot"), plotOutput("density_plot_outcome")),
+                    tabPanel("Map", plotOutput("map"))
+        )
+      )
+      )
+  ),
+  
+  server <- function(input, output) {
+    
+    output$line_graph <- renderPlot({
+      predictor <- input$predictor
+      outcome <- input$outcome
+      data %>% 
+       # filter(!(COUNTY == "California")) %>% 
+        ggplot(aes(x = .data[[predictor]], y = .data[[outcome]])) +
+        geom_point() +
+        geom_smooth(method = "lm") +
+        theme_minimal() +
+        labs(title = "predictor vs outcome")
+    })
+    
+    output$density_plot <- renderPlot({
+      outcome <- input$outcome
+      data %>% 
+        #filter(!(COUNTY == "California")) %>% 
+        ggplot(aes(x = .data[[outcome]])) +
+        geom_density() +
+        theme_minimal()
+    })
+    
+      output$density_plot_outcome <- renderPlot({
+    predictor <- input$predictor
+    data %>% 
+      #filter(!(COUNTY == "California")) %>% 
+      ggplot(aes(x = .data[[predictor]])) +
+      geom_density() +
+      theme_minimal()
+  })
+    
+    output$map <- renderPlot({
+     data_year <- data %>% 
+        filter(Year == input$year)
+      
+       #mutate(outcome_variable = .data[[disease]]) %>% 
+        plot_usmap(regions = "counties", include = "CA", data = data_year, values = input$outcome) + 
+        labs(title = "US Counties",
+             subtitle = "This map is supposed to have points but isn't working currently.") + 
+        theme(legend.position = "right") +
+        scale_fill_continuous(
+          low = "lightblue", high = "navy", name = "Outcome in selected year", label = scales::comma
+        ) + 
+          geom_point(data = transformed_data_with_data, aes(x = Longitude.1, y = Latitude.1, size = .data[[input$predictor]]),
+                     color = "red", alpha = 0.25) 
+    })
+  },
+    options = list(height = 700)
+)
+```
+
