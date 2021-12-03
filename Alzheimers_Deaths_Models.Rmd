@@ -42,6 +42,11 @@ pollution %>%
              scales = "free",
              nrow = 5)
 
+pollution %>% 
+  select(Alzheimer.s.disease) %>% 
+  ggplot(aes(x = Alzheimer.s.disease)) +
+  geom_histogram()
+
 for(i in 1:ncol(pollution)) {
   median <- median(pollution[,i],na.rm = TRUE)
   for (j in 1:nrow(pollution)){
@@ -55,6 +60,7 @@ for(i in 1:ncol(pollution)) {
 ```{r}
 pollution_mod <- pollution %>%
   mutate(log_alzheimers = log(Alzheimer.s.disease, base = 10)) %>% 
+  filter(log_alzheimers != "-Inf") %>% 
   select(-Alzheimer.s.disease) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
   add_n_miss() %>% 
