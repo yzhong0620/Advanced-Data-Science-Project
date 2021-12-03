@@ -579,3 +579,7 @@ data_rmse <- pollution_final_stack %>%
 rmse(data_rmse$log_alzheimers, data_rmse$.pred)
 ```
 
+```{r}
+write_rds(pollution_final_stack, "alzheimers_model.rds")
+```
+

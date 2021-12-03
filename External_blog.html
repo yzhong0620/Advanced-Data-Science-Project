@@ -185,10 +185,29 @@ pre code {
 <li>Air quality data by day - data was summarized to the county and annual level - <a href="https://www.kaggle.com/epa/epa-historical-air-quality?select=air_quality_annual_summary">US EPA</a></li>
 <li>California healthy places index - data on a variety of factors including tree canopy, average distance from a park, average distance from a supermarket, median income, and education level by county - <a href="https://www.kaggle.com/epa/epa-historical-air-quality?select=air_quality_annual_summary">Public Health Alliance of Southern California</a></li>
 </ul>
-<div id="data-exploration" class="section level4">
-<h4>Data Exploration</h4>
+</div>
+<div id="data-exploration" class="section level3">
+<h3>Data Exploration</h3>
 <p>Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset.</p>
-<p><div style="width: 100% ; height: 700px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div></p>
+<p><div style="width: 100% ; height: 600px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div></p>
+</div>
+<div id="review-of-literature" class="section level2">
+<h2>Review of Literature</h2>
+<div id="asthma" class="section level3">
+<h3>Asthma</h3>
+<p>There is an extensive body of research documenting the relationship between air pollution and asthma, which was the initial inspiration for this project. Increases in concentrations of particulate matter, sulfur dioxide, nitrogen dioxide, and ozone have been documented as directly correlated with increases in asthma-related emergency room visits (<a href="https://www.sciencedirect.com/science/article/abs/pii/S0013935111000296" class="uri">https://www.sciencedirect.com/science/article/abs/pii/S0013935111000296</a>). A general lack of air quality data led us to pursue other possible correlations, especially those provided by the healthy places index dataset.</p>
+</div>
+<div id="breast-cancer" class="section level3">
+<h3>Breast Cancer</h3>
+<p>Recent research has also revealed a positive correlation between those same air pollutants and breast cancer incidence rates (<a href="https://www.nature.com/articles/s41598-020-62200-x" class="uri">https://www.nature.com/articles/s41598-020-62200-x</a>). Variables such as education rate, income, and employment are also known to influence breast cancer prevalence, so were included in our model. Breast cancer has also been documented to be genetic, so we did not expect to be able to explain all variation in cancer rates by environmental and socioeconomic factors alone.</p>
+</div>
+<div id="alzheimers-disease" class="section level3">
+<h3>Alzheimer’s Disease</h3>
+<p>Long term exposure to air pollutants has been shown to contribute to cognitive decline in a variety of ways, including by increasing the risk of Alzheimer’s disease and hastening it’s onset (<a href="https://www.alz.org/aaic/releases_2021/air-pollution-dementia-risk.asp" class="uri">https://www.alz.org/aaic/releases_2021/air-pollution-dementia-risk.asp</a>). Maternal exposure to these pollutants has also been associated with increased risk of autism and ADHD, but we were unable to find data documenting those diagnoses.</p>
+</div>
+<div id="heart-disease" class="section level3">
+<h3>Heart Disease</h3>
+<p>Finally, research using an EPA dataset has established that long-term exposure to particulate matter and nitrogen oxides at levels close to the National Ambient Air Quality Standards can prematurely age blood vessels and contribute to a more rapid buildup of calcium in the coronary artery, leading to heart disease (<a href="https://www.thelancet.com/journals/lancet/article/PIIS0140-6736%2816%2900378-0/fulltext" class="uri">https://www.thelancet.com/journals/lancet/article/PIIS0140-6736%2816%2900378-0/fulltext</a>).</p>
 </div>
 </div>
 </div>

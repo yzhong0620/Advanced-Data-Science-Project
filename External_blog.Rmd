@@ -18,7 +18,7 @@ library(ggplot2)
 library(usmap)
 ```
 
-# INTRODUCTION
+# Introduction
 
 This project builds models to examine the relationship between various environmental and socioeconomic factors and health outcomes in California counties. A large portion of the project involved compiling the data from different publicly available sources, and some decisions on what to include and disclude were made based on the data that could be found. We ultimately chose to focus our analysis on California counties because of an abundance of publicly available data and included the years 2017, 2018, and 2019 because a variety of data had been collected in that time but were uninfluenced by the pandemic.
 
@@ -177,7 +177,24 @@ shinyApp(
                      color = "red", alpha = 0.25) 
     })
   },
-    options = list(height = 700)
+    options = list(height = 600)
 )
 ```
 
+## Literature
+
+### Asthma
+
+There is an extensive body of research documenting the relationship between air pollution and asthma, which was the initial inspiration for this project. Increases in concentrations of particulate matter, sulfur dioxide, nitrogen dioxide, and ozone have been documented as directly correlated with increases in asthma-related [emergency room visits](https://www.sciencedirect.com/science/article/abs/pii/S0013935111000296). A general lack of air quality data led us to pursue other possible correlations, especially those provided by the healthy places index dataset.
+
+### Breast Cancer
+
+Recent research has also revealed a positive correlation between those same air pollutants and [breast cancer incidence rates](https://www.nature.com/articles/s41598-020-62200-x). Variables such as education rate, income, and employment are also known to influence breast cancer prevalence, so were included in our model. Breast cancer has also been documented to be genetic, so we did not expect to be able to explain all variation in cancer rates by environmental and socioeconomic factors alone. 
+
+### Alzheimer’s Disease
+
+Long term exposure to air pollutants has been shown to contribute to cognitive decline in a variety of ways, including by increasing [the risk of Alzheimer’s disease and hastening it’s onset](https://www.alz.org/aaic/releases_2021/air-pollution-dementia-risk.asp). Maternal exposure to these pollutants has also been associated with increased risk of autism and ADHD, but we were unable to find data documenting those diagnoses. 
+
+### Heart Disease
+
+Finally, research using an EPA dataset has established that long-term exposure to particulate matter and nitrogen oxides at levels close to the National Ambient Air Quality Standards can prematurely age blood vessels and contribute to a more rapid buildup of calcium in the coronary artery, [leading to heart disease](https://www.thelancet.com/journals/lancet/article/PIIS0140-6736%2816%2900378-0/fulltext).
