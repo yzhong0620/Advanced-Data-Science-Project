@@ -1,5 +1,6 @@
 library(shiny)       # for app
 library(tidyverse)   # for plotting and wrangling
+library(dplyr)
 library(tidymodels)  # for modeling
 library(ranger)      # for random forest
 library(bslib)       # for theming
@@ -38,7 +39,7 @@ ui <- fluidPage(
       
       #number of accounts delinquent
       sliderInput(inputId = "annual_mean_co",
-                  label = "Number of accounts delinquent:",
+                  label = "annual_mean_co:",
                   min = stats_num %>% 
                     filter(variable =="annual_mean_co") %>% 
                     pull(min_val),
@@ -193,7 +194,7 @@ ui <- fluidPage(
       
       #Number of installment accounts opened in past 12 months
       sliderInput(inputId = "housing",
-                  label = "Number of installment accounts opened in past 12 months:",
+                  label = "housing:",
                   min = stats_num %>% 
                     filter(variable =="housing") %>% 
                     pull(min_val),
@@ -545,7 +546,7 @@ ui <- fluidPage(
                     step = 1),
       
       
-      submitButton(text = "Create the CP profile"),
+      submitButton(text = "Create the CP profile")
     ),
     
     # Show the plot
@@ -611,38 +612,7 @@ server <- function(input, output) {output$cp_plot <- renderPlot({
     set_names(ifelse(names(.) == "var_of_interest", 
                      input$var, 
                      names(.)))
-  
-  #make funded amount an integer
-  # if (input$var == "funded_amnt") {
-  #   obs_many %>% 
-  #     select(.data[[input$var]]) %>% 
-  #     bind_cols(
-  #       predict(lending_mod,
-  #               new_data = obs_many %>% 
-  #                 mutate(across(.data[[input$var]], 
-  #                               ~as.integer(round(.x)))), 
-  #               type = "prob")
-  #     ) %>% 
-  #     ggplot(aes(x = .data[[input$var]],
-  #                y = .pred_good)) +
-  #     geom_line() +
-  #     labs(title = "Predicted probability of loan fully paid back \nor currently on-time",
-  #          y = NULL) +
-  #     theme_minimal()
-  # } else {
-  #   obs_many %>% 
-  #     select(.data[[input$var]]) %>% 
-  #     bind_cols(
-  #       predict(lending_mod,
-  #               new_data = obs_many, 
-  #               type = "prob")
-  #     ) %>% 
-  #     ggplot(aes(x = .data[[input$var]],
-  #                y = .pred_good)) +
-  #     geom_line() +
-  #     labs(title = "Predicted probability of loan fully paid back or currently on-time",
-  #          y = NULL) +
-  #     theme_minimal()
-  # }
 })
 }
+
+shinyApp(ui = ui, server = server)
