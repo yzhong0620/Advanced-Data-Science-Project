@@ -1,5 +1,5 @@
 ---
-title: "Alzheimer's Deaths Models"
+title: "Alzheimer's Deaths Models - Only Environmental"
 date: "11/30/2021"
 output: html_document
 ---
@@ -27,7 +27,51 @@ theme_set(theme_minimal()) # Lisa's favorite theme
 # Lasso Model
 
 ```{r}
-pollution <- read.csv("data_standardized.csv")
+pollution <- read.csv("data_standardized.csv") %>% 
+  select(County,
+          asthma_er_avg,
+          Year,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct,
+          annual_mean_co,
+          annual_mean_ozone,
+          annual_mean_pm10,
+         annual_mean_so2,
+         annual_mean_no2,
+         annual_mean_pb,
+         annual_mean_pm25,
+         h2o_contam,
+         park_access,
+         pollution,
+         tree_canopy)
+  
 ```
 
 ```{r}
@@ -580,6 +624,6 @@ rmse(data_rmse$log_alzheimers, data_rmse$.pred)
 ```
 
 ```{r}
-write_rds(pollution_final_stack, "alzheimers_model.rds")
+write_rds(pollution_final_stack, "alzheimers_model_environmental.rds")
 ```
 
