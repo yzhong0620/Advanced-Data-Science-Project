@@ -1,6 +1,7 @@
 ---
-title: "Alzheimer's Deaths Models"
-date: "11/30/2021"
+title: "Breat Cancer Surgerys - Environmental Only"
+author: "Mia Rothberg"
+date: "12/6/2021"
 output: html_document
 ---
 
@@ -42,11 +43,6 @@ pollution %>%
              scales = "free",
              nrow = 5)
 
-pollution %>% 
-  select(Alzheimer.s.disease) %>% 
-  ggplot(aes(x = Alzheimer.s.disease)) +
-  geom_histogram()
-
 for(i in 1:ncol(pollution)) {
   median <- median(pollution[,i],na.rm = TRUE)
   for (j in 1:nrow(pollution)){
@@ -59,9 +55,8 @@ for(i in 1:ncol(pollution)) {
 
 ```{r}
 pollution_mod <- pollution %>%
-  mutate(log_alzheimers = log(Alzheimer.s.disease, base = 10)) %>% 
-  filter(log_alzheimers != "-Inf") %>% 
-  select(-Alzheimer.s.disease) %>% 
+  mutate(log_breast = log(Breast_Surgery_Ct, base = 10)) %>% 
+  select(-Breast_Surgery_Ct) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
   add_n_miss() %>% 
   filter(n_miss_all == 0) %>% 
@@ -74,12 +69,12 @@ pollution_testing <- testing(pollution_split)
 ```
 
 ```{r}
-pollution_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
+pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
   step_rm(County,
           asthma_er_avg,
           Year,
           All.causes..total.,
-         # Alzheimer.s.disease,
+          Alzheimer.s.disease,
           Malignant.neoplasms,
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
@@ -98,7 +93,7 @@ pollution_recipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-          Breast_Surgery_Ct,
+         # Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -223,16 +218,16 @@ pollution_lasso_test %>%
 # Xgboost model
 
 ```{r}
-use_xgboost(log_alzheimers ~ ., data = pollution_training)
+use_xgboost(log_breast ~ ., data = pollution_training)
 ```
 
 ```{r}
 boost_recipe <- 
-  recipe(formula = log_alzheimers ~ ., data = pollution_training) %>% 
+  recipe(formula = log_breast ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
-          #Alzheimer.s.disease,
+          Alzheimer.s.disease,
           Malignant.neoplasms,
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
@@ -251,7 +246,7 @@ boost_recipe <-
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-          Breast_Surgery_Ct,
+          #Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -365,14 +360,14 @@ test_preds <- pollution_testing %>%
 
 # Compute test rmse
 test_preds %>% 
-  summarize(rmse = sqrt(mean((log_alzheimers - .pred)^2))) %>% 
+  summarize(rmse = sqrt(mean((log_breast - .pred)^2))) %>% 
   pull(rmse)
 ```
 
 ```{r}
 # Graph results
 test_preds %>% 
-  ggplot(aes(x = log_alzheimers,
+  ggplot(aes(x = log_breast,
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -387,11 +382,11 @@ test_preds %>%
 # Random Forest Model
 
 ```{r}
-pollution_rfrecipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>% 
+pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
-        #  Alzheimer.s.disease,
+          Alzheimer.s.disease,
           Malignant.neoplasms,
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
@@ -411,7 +406,7 @@ pollution_rfrecipe <- recipe(log_alzheimers ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-          Breast_Surgery_Ct,
+         # Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -452,7 +447,7 @@ pollution_rfworkflow <-
 # Set up penalty grid model 
 rf_penalty_grid <- grid_regular(finalize(mtry(),
                                          pollution_training %>%
-                                           select(-log_alzheimers)),
+                                           select(-log_breast)),
                                 min_n(),
                                 levels = 3)
 ```
@@ -555,7 +550,7 @@ pollution_final_stack
 pollution_final_stack %>% 
   predict(new_data = pollution_testing) %>% 
   bind_cols(pollution_testing) %>% 
-  ggplot(aes(x = log_alzheimers, 
+  ggplot(aes(x = log_breast, 
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -563,8 +558,8 @@ pollution_final_stack %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(alzheimer's disease)", 
-       y = "Predicted log(alzheimer's disease)")
+  labs(x = "Actual log(breast cancer)", 
+       y = "Predicted log(breast_cancer)")
 ```
 
 ```{r}
@@ -578,8 +573,3 @@ data_rmse <- pollution_final_stack %>%
 
 rmse(data_rmse$log_alzheimers, data_rmse$.pred)
 ```
-
-```{r}
-write_rds(pollution_final_stack, "alzheimers_model.rds")
-```
-
