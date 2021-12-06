@@ -60,6 +60,8 @@ for(i in 1:ncol(pollution)) {
 }
 ```
 
+Based on the histogram above, we can see that asthma_er_avg is right_skewed. Also, to get rid of NA values without losing observations, we decided to replace all NAs with the median value of the column.
+
 ```{r}
 pollution_mod <- pollution %>%
   mutate(log_asthma = log(asthma_er_avg, base = 10)) %>% 
@@ -74,6 +76,10 @@ pollution_split <- initial_split(pollution_mod, prop = .75)
 pollution_training <- training(pollution_split)
 pollution_testing <- testing(pollution_split)
 ```
+
+To fix to right-skewed shape, we performed a log transformation before using it as the outcome variable in models. We also made sure that all character variables are mutated to factor variables and reassured there were no more NAs.
+
+The dataset has 153 observations of 64 variables in total. 75% (114 observations) were split to be in the training set and 25% (39 observations) were in the testing set.
 
 ```{r}
 pollution_recipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
