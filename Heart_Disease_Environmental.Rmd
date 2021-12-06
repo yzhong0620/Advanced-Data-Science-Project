@@ -1,6 +1,7 @@
 ---
-title: "Breast Cancer Surgery Models"
-date: "11/30/2021"
+title: "Heart Disease Environmental"
+author: "Mia Rothberg"
+date: "12/6/2021"
 output: html_document
 ---
 
@@ -27,7 +28,51 @@ theme_set(theme_minimal()) # Lisa's favorite theme
 # Lasso Model
 
 ```{r}
-pollution <- read.csv("data_standardized.csv")
+pollution <- read.csv("data_standardized.csv") %>% 
+    select(County,
+          asthma_er_avg,
+          Year,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct,
+          annual_mean_co,
+          annual_mean_ozone,
+          annual_mean_pm10,
+         annual_mean_so2,
+         annual_mean_no2,
+         annual_mean_pb,
+         annual_mean_pm25,
+         h2o_contam,
+         park_access,
+         pollution,
+         tree_canopy)
+
 ```
 
 ```{r}
@@ -54,8 +99,8 @@ for(i in 1:ncol(pollution)) {
 
 ```{r}
 pollution_mod <- pollution %>%
-  mutate(log_breast = log(Breast_Surgery_Ct, base = 10)) %>% 
-  select(-Breast_Surgery_Ct) %>% 
+  mutate(log_heart = log(Diseases.of.heart, base = 10)) %>% 
+  select(-Diseases.of.heart) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
   add_n_miss() %>% 
   filter(n_miss_all == 0) %>% 
@@ -68,9 +113,8 @@ pollution_testing <- testing(pollution_split)
 ```
 
 ```{r}
-pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
+pollution_recipe <- recipe(log_heart ~ ., data = pollution_training) %>% 
   step_rm(County,
-          asthma_er_avg,
           Year,
           All.causes..total.,
           Alzheimer.s.disease,
@@ -78,7 +122,7 @@ pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
           Assault..homicide.,
-          Diseases.of.heart,
+          #Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -92,7 +136,7 @@ pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-         # Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -100,7 +144,8 @@ pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_normalize(all_predictors(), 
                  -all_nominal()) %>% 
   step_dummy(all_nominal(), 
@@ -217,12 +262,12 @@ pollution_lasso_test %>%
 # Xgboost model
 
 ```{r}
-use_xgboost(log_breast ~ ., data = pollution_training)
+use_xgboost(log_heart ~ ., data = pollution_training)
 ```
 
 ```{r}
 boost_recipe <- 
-  recipe(formula = log_breast ~ ., data = pollution_training) %>% 
+  recipe(formula = log_heart ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
@@ -230,8 +275,8 @@ boost_recipe <-
           Malignant.neoplasms,
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
-          Diseases.of.heart,
           Assault..homicide.,
+          #Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -245,7 +290,7 @@ boost_recipe <-
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-          #Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -253,8 +298,8 @@ boost_recipe <-
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          asthma_er_avg,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_novel(all_nominal_predictors()) %>% 
   step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
   step_zv(all_predictors()) %>% 
@@ -359,14 +404,14 @@ test_preds <- pollution_testing %>%
 
 # Compute test rmse
 test_preds %>% 
-  summarize(rmse = sqrt(mean((log_breast - .pred)^2))) %>% 
+  summarize(rmse = sqrt(mean((log_heart - .pred)^2))) %>% 
   pull(rmse)
 ```
 
 ```{r}
 # Graph results
 test_preds %>% 
-  ggplot(aes(x = log_breast,
+  ggplot(aes(x = log_heart,
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -374,14 +419,14 @@ test_preds %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(asthma)", 
-       y = "Predicted log(asthma)")
+  labs(x = "Actual log(heart)", 
+       y = "Predicted log(heart)")
 ```
 
 # Random Forest Model
 
 ```{r}
-pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
+pollution_rfrecipe <- recipe(log_heart ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
@@ -390,8 +435,7 @@ pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
           Assault..homicide.,
-          Diseases.of.heart,
-          asthma_er_avg,
+          #Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -405,7 +449,7 @@ pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-         # Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -413,7 +457,8 @@ pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          Stomach_Surgery_Ct) %>% 
+          Stomach_Surgery_Ct,
+          asthma_er_avg) %>% 
   step_normalize(all_predictors(), 
                  -all_nominal()) %>% 
   step_dummy(all_nominal(), 
@@ -446,7 +491,7 @@ pollution_rfworkflow <-
 # Set up penalty grid model 
 rf_penalty_grid <- grid_regular(finalize(mtry(),
                                          pollution_training %>%
-                                           select(-log_breast)),
+                                           select(-log_heart)),
                                 min_n(),
                                 levels = 3)
 ```
@@ -478,14 +523,21 @@ pol_rfFinal <- pollution_rfworkflow %>%
 ```
 
 ```{r}
-# OOB error (MSE)
-pol_rfFinal$fit$fit$fit$prediction.error
+pollution_rffit <- pollution_rfworkflow %>% 
+  fit(pollution_training)
 
-# OOB RMSE
-sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
+pollution_rffit
 ```
 
 ```{r}
+# OOB error (MSE)
+pollution_rffit$fit$fit$fit$prediction.error
+
+# OOB RMSE
+sqrt(pollution_rffit$fit$fit$fit$prediction.error)
+```
+
+```{r eval = FALSE}
 set.seed(456)
 
 metric <- metric_set(rmse) 
@@ -501,13 +553,21 @@ collect_metrics(pollution_rfTUNE)
 
 # Stacking
 
+Now that we have our set of candidate models (9 random forest, 20 lasso, and 10 boost), we’re ready to stack! We’re going to follow the process laid out on the stacks webpage.
+
+First, create the stack. Shown by the number of columns, it has removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 7 lasso, and 10 boost.
+
 ```{r}
 pollution_stack <- 
   stacks() %>% 
   add_candidates(boost_tune) %>%
   add_candidates(pollution_lasso_tune) %>% 
   add_candidates(pollution_rfTUNE)
+```
 
+We can look at the predictions from the candidate models in a tibble. Most of the predictions are very close to the actual values, except the first few boost models.
+
+```{r}
 as_tibble(pollution_stack)
 ```
 
@@ -549,7 +609,7 @@ pollution_final_stack
 pollution_final_stack %>% 
   predict(new_data = pollution_testing) %>% 
   bind_cols(pollution_testing) %>% 
-  ggplot(aes(x = log_breast, 
+  ggplot(aes(x = log_heart, 
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -557,8 +617,8 @@ pollution_final_stack %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(breast cancer)", 
-       y = "Predicted log(breast_cancer)")
+  labs(x = "Actual log(heart)", 
+       y = "Predicted log(heart)")
 ```
 
 ```{r}

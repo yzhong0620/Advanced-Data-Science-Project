@@ -1,11 +1,12 @@
 ---
-title: "Breast Cancer Surgery Models"
-date: "11/30/2021"
+title: "Asthma Environmental"
+author: "Mia Rothberg"
+date: "12/6/2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r}
@@ -27,49 +28,8 @@ theme_set(theme_minimal()) # Lisa's favorite theme
 # Lasso Model
 
 ```{r}
-pollution <- read.csv("data_standardized.csv")
-```
-
-```{r}
-pollution %>% 
-  select(where(is.numeric)) %>% 
-  pivot_longer(cols = everything(),
-               names_to = "variable", 
-               values_to = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_histogram(bins = 30) +
-  facet_wrap(vars(variable), 
-             scales = "free",
-             nrow = 5)
-
-for(i in 1:ncol(pollution)) {
-  median <- median(pollution[,i],na.rm = TRUE)
-  for (j in 1:nrow(pollution)){
-    if (is.na(pollution[j, i])){
-      pollution[j, i] <- median
-    }
-  }
-}
-```
-
-```{r}
-pollution_mod <- pollution %>%
-  mutate(log_breast = log(Breast_Surgery_Ct, base = 10)) %>% 
-  select(-Breast_Surgery_Ct) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
-  select(-n_miss_all)
-
-set.seed(456)
-pollution_split <- initial_split(pollution_mod, prop = .75)
-pollution_training <- training(pollution_split)
-pollution_testing <- testing(pollution_split)
-```
-
-```{r}
-pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
-  step_rm(County,
+pollution <- read.csv("data_standardized.csv") %>% 
+  select(County,
           asthma_er_avg,
           Year,
           All.causes..total.,
@@ -92,7 +52,97 @@ pollution_recipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-         # Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
+          Colon_Surgery_Ct,
+          Esophagus_Surgery_Ct,
+          Liver_Surgery_Ct,
+          Lung_Surgery_Ct,
+          Pancreas_Surgery_Ct,
+          Prostate_Surgery_Ct,
+          Rectum_Surgery_Ct,
+          Stomach_Surgery_Ct,
+          annual_mean_co,
+          annual_mean_ozone,
+          annual_mean_pm10,
+         annual_mean_so2,
+         annual_mean_no2,
+         annual_mean_pb,
+         annual_mean_pm25,
+         h2o_contam,
+         park_access,
+         pollution,
+         tree_canopy)
+```
+
+```{r, eval=FALSE}
+pollution %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free",
+             nrow = 5)
+```
+
+```{r}
+pollution %>% 
+  select(asthma_er_avg) %>% 
+  ggplot(aes(x = asthma_er_avg)) +
+  geom_histogram()
+
+for(i in 1:ncol(pollution)) {
+  median <- median(pollution[,i],na.rm = TRUE)
+  for (j in 1:nrow(pollution)){
+    if (is.na(pollution[j, i])){
+      pollution[j, i] <- median
+    }
+  }
+}
+```
+
+```{r}
+pollution_mod <- pollution %>%
+  mutate(log_asthma = log(asthma_er_avg, base = 10)) %>% 
+  select(-asthma_er_avg) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+set.seed(456)
+pollution_split <- initial_split(pollution_mod, prop = .75)
+pollution_training <- training(pollution_split)
+pollution_testing <- testing(pollution_split)
+```
+
+```{r}
+pollution_recipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
+  step_rm(County,
+          Year,
+          All.causes..total.,
+          Alzheimer.s.disease,
+          Malignant.neoplasms,
+          Chronic.lower.respiratory.diseases,
+          Diabetes.mellitus,
+          Assault..homicide.,
+          Diseases.of.heart,
+          Essential.hypertension.and.hypertensive.renal.disease,
+          Accidents..unintentional.injuries.,
+          Chronic.liver.disease.and.cirrhosis,
+          Nephritis..nephrotic.syndrome.and.nephrosis,
+          Parkinson.s.disease,
+          Influenza.and.pneumonia,
+          Cerebrovascular.diseases,
+          Intentional.self.harm..suicide.,
+          FIPS,
+          cancer_incidence_rate,
+          asthma_deaths,
+          Bladder_Surgery_Ct,
+          Brain_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -216,13 +266,17 @@ pollution_lasso_test %>%
 
 # Xgboost model
 
+First we used the use_xgboost() function, which gives recommendation on how to build our recipe, workflow, etc.
+
 ```{r}
-use_xgboost(log_breast ~ ., data = pollution_training)
+use_xgboost(log_asthma ~ ., data = pollution_training)
 ```
+
+Based on output from the use_xgboost() function and our previous recipes, we created our own recipe.
 
 ```{r}
 boost_recipe <- 
-  recipe(formula = log_breast ~ ., data = pollution_training) %>% 
+  recipe(formula = log_asthma ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
@@ -230,8 +284,8 @@ boost_recipe <-
           Malignant.neoplasms,
           Chronic.lower.respiratory.diseases,
           Diabetes.mellitus,
-          Diseases.of.heart,
           Assault..homicide.,
+          Diseases.of.heart,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -245,7 +299,7 @@ boost_recipe <-
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-          #Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -253,7 +307,6 @@ boost_recipe <-
           Pancreas_Surgery_Ct,
           Prostate_Surgery_Ct,
           Rectum_Surgery_Ct,
-          asthma_er_avg,
           Stomach_Surgery_Ct) %>% 
   step_novel(all_nominal_predictors()) %>% 
   step_dummy(all_nominal_predictors(), one_hot = TRUE)  %>% 
@@ -262,11 +315,7 @@ boost_recipe <-
                  -all_nominal())
 ```
 
-```{r}
-boost_recipe %>% 
-  prep() %>% 
-  juice() 
-```
+Next, we specified the model. learn_rate is the parameter we decided to tune, and we created a grid of 10 values to try in tuning for learn_rate as the following:
 
 ```{r}
 boost_spec <- boost_tree(
@@ -288,18 +337,15 @@ boost_grid <- grid_regular(learn_rate(),
 boost_grid
 ```
 
+We then put the recipe and model specification into a workflow.
+
 ```{r}
 boost_wf <- workflow() %>% 
   add_recipe(boost_recipe) %>%
   add_model(boost_spec) 
 ```
 
-```{r}
-set.seed(456)
-val_split <- validation_split(pollution_training, 
-                              prop = .6)
-val_split
-```
+The next step is to train these models. registerDoParallel() was used to speed up the process.
 
 ```{r}
 set.seed(456)
@@ -314,9 +360,13 @@ boost_tune <- boost_wf %>%
 )
 ```
 
+Here is a table summarizing the results. We can see that larger learning rates actually seem to do better.
+
 ```{r}
 collect_metrics(boost_tune)
 ```
+
+We also plotted the rmse to visually support our conclusion above.
 
 ```{r}
 collect_metrics(boost_tune) %>% 
@@ -328,6 +378,8 @@ collect_metrics(boost_tune) %>%
   labs(y = "rmse") +
   theme_minimal()
 ```
+
+Then we decided to select the best learning rate parameter and finalize the model.
 
 ```{r}
 best_lr <- select_best(boost_tune, "rmse")
@@ -346,11 +398,15 @@ final_boost <- final_boost_wf %>%
   fit(data = pollution_training)
 ```
 
+This graph tells us which predictors are the most important. It seems that supermarkets, annual_mean_no2, and homeownership have the largest influence on asthma ER visit.
+
 ```{r}
 final_boost %>% 
   pull_workflow_fit() %>%
   vip(geom = "col")
 ```
+
+The final model was also fitted to the testing data. We can see the testing rmse is 0.05, larger than the training rmse.
 
 ```{r}
 # Use model on test data
@@ -359,14 +415,16 @@ test_preds <- pollution_testing %>%
 
 # Compute test rmse
 test_preds %>% 
-  summarize(rmse = sqrt(mean((log_breast - .pred)^2))) %>% 
+  summarize(rmse = sqrt(mean((log_asthma - .pred)^2))) %>% 
   pull(rmse)
 ```
+
+The graph below visualized the results. We can conclude that the predicted values are very close to the actual values.
 
 ```{r}
 # Graph results
 test_preds %>% 
-  ggplot(aes(x = log_breast,
+  ggplot(aes(x = log_asthma,
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -381,7 +439,7 @@ test_preds %>%
 # Random Forest Model
 
 ```{r}
-pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>% 
+pollution_rfrecipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
   step_rm(County,
           Year,
           All.causes..total.,
@@ -391,7 +449,6 @@ pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           Diabetes.mellitus,
           Assault..homicide.,
           Diseases.of.heart,
-          asthma_er_avg,
           Essential.hypertension.and.hypertensive.renal.disease,
           Accidents..unintentional.injuries.,
           Chronic.liver.disease.and.cirrhosis,
@@ -405,7 +462,7 @@ pollution_rfrecipe <- recipe(log_breast ~ ., data = pollution_training) %>%
           asthma_deaths,
           Bladder_Surgery_Ct,
           Brain_Surgery_Ct,
-         # Breast_Surgery_Ct,
+          Breast_Surgery_Ct,
           Colon_Surgery_Ct,
           Esophagus_Surgery_Ct,
           Liver_Surgery_Ct,
@@ -446,7 +503,7 @@ pollution_rfworkflow <-
 # Set up penalty grid model 
 rf_penalty_grid <- grid_regular(finalize(mtry(),
                                          pollution_training %>%
-                                           select(-log_breast)),
+                                           select(-log_asthma)),
                                 min_n(),
                                 levels = 3)
 ```
@@ -501,15 +558,25 @@ collect_metrics(pollution_rfTUNE)
 
 # Stacking
 
+After we had our set of candidate models (9 random forest, 20 lasso, and 10 boost), we started stacking. We followed the process laid out on the stacks webpage.
+
+First, we created the stack. Shown by the number of columns, it removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
+
 ```{r}
 pollution_stack <- 
   stacks() %>% 
   add_candidates(boost_tune) %>%
   add_candidates(pollution_lasso_tune) %>% 
   add_candidates(pollution_rfTUNE)
+```
 
+We can look at the predictions from the candidate models in a tibble. Most of the predictions are very close to the actual values, except the first few boost models.
+
+```{r}
 as_tibble(pollution_stack)
 ```
+
+We wanted to blend the predictions from each model together to form an even better overall prediction using the blend_predictions() function. Doing this with our models, we see only 4 models have non-zero coefficients, 1 random forest, 2 lasso, and 1 boost:
 
 ```{r}
 set.seed(456)
@@ -521,22 +588,26 @@ pollution_blend <-
 pollution_blend
 ```
 
+Here is the rmse for the various penalty parameters:
+
 ```{r}
 pollution_blend$metrics %>% 
   filter(.metric == "rmse")
 ```
 
+We can examine some plots to see if we need to adjust the penalty parameter at all. This set of three plots with penalty on the x axis shows that we seem to have captured the smallest RMSE.
+
 ```{r}
 autoplot(pollution_blend)
 ```
 
-```{r}
-autoplot(pollution_blend, type = "members")
-```
+The blending weights for the top ensemble members are presented in this plot. The random forest has the highest weight, more than two times of the second highest weight boost has. The two lasso models have low weights.
 
 ```{r}
 autoplot(pollution_blend, type = "weights")
 ```
+
+Finally we fit the candidate models with non-zero stacking coefficients to the full training data using fit_members() function. The numeric values of the blending weights for the top ensemble members are also printed out.
 
 ```{r}
 pollution_final_stack <- pollution_blend %>% 
@@ -545,11 +616,13 @@ pollution_final_stack <- pollution_blend %>%
 pollution_final_stack
 ```
 
+Here is a plot comparing predicted and actual values after fitting it to the testing data. We can see the two lines are almost the same!
+
 ```{r}
 pollution_final_stack %>% 
   predict(new_data = pollution_testing) %>% 
   bind_cols(pollution_testing) %>% 
-  ggplot(aes(x = log_breast, 
+  ggplot(aes(x = log_asthma, 
              y = .pred)) +
   geom_point(alpha = .5, 
              size = .5) +
@@ -557,8 +630,8 @@ pollution_final_stack %>%
   geom_abline(slope = 1, 
               intercept = 0, 
               color = "darkred") +
-  labs(x = "Actual log(breast cancer)", 
-       y = "Predicted log(breast_cancer)")
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
 ```
 
 ```{r}
@@ -570,5 +643,10 @@ data_rmse <- pollution_final_stack %>%
   predict(new_data = pollution_testing) %>% 
   bind_cols(pollution_testing) 
 
-rmse(data_rmse$log_alzheimers, data_rmse$.pred)
+rmse(data_rmse$log_asthma, data_rmse$.pred)
 ```
+
+```{r, eval=FALSE}
+write_rds(pollution_final_stack, "asthma_model_final_environmental.rds")
+```
+
