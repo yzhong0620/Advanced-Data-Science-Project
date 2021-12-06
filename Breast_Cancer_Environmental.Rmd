@@ -86,6 +86,11 @@ pollution %>%
              scales = "free",
              nrow = 5)
 
+pollution %>% 
+  select(Breast_Surgery_Ct) %>% 
+  ggplot(aes(x = Breast_Surgery_Ct)) +
+  geom_histogram()
+
 for(i in 1:ncol(pollution)) {
   median <- median(pollution[,i],na.rm = TRUE)
   for (j in 1:nrow(pollution)){
@@ -99,6 +104,7 @@ for(i in 1:ncol(pollution)) {
 ```{r}
 pollution_mod <- pollution %>%
   mutate(log_breast = log(Breast_Surgery_Ct, base = 10)) %>% 
+  filter(log_breast != "-Inf") %>%
   select(-Breast_Surgery_Ct) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
   add_n_miss() %>% 
