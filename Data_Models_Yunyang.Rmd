@@ -603,8 +603,7 @@ data_rmse <- pollution_final_stack %>%
 rmse(data_rmse$log_asthma, data_rmse$.pred)
 ```
 
-```{r}
+```{r, eval=FALSE}
 write_rds(pollution_final_stack, "asthma_model_final.rds")
-
 ```
 
