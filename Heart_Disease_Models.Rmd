@@ -42,6 +42,11 @@ pollution %>%
              scales = "free",
              nrow = 5)
 
+pollution %>% 
+  select(Diseases.of.heart) %>% 
+  ggplot(aes(x = Diseases.of.heart)) +
+  geom_histogram()
+
 for(i in 1:ncol(pollution)) {
   median <- median(pollution[,i],na.rm = TRUE)
   for (j in 1:nrow(pollution)){
