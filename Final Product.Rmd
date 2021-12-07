@@ -10,6 +10,19 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
+```{r paged-table, echo=FALSE}
+# define a method for objects of the class data.frame
+# see https://github.com/rstudio/distill/issues/310#issuecomment-797541459
+library(knitr)
+knit_print.data.frame <- function(x, ...) {
+  asis_output(
+    rmarkdown:::paged_table_html(x, options = attr(x, "options")),
+    meta = list(dependencies = rmarkdown:::html_dependency_pagedtable())
+  )
+}
+registerS3method("knit_print", "data.frame", knit_print.data.frame)
+```
+
 ```{r}
 library(tidyverse)         # for graphing and data cleaning
 library(tidymodels)        # for modeling
@@ -438,7 +451,7 @@ boost_recipe <-
                  -all_nominal())
 ```
 
-Next, we specified the model. learn_rate is the parameter we decided to tune, and we created a grid of 10 values to try in tuning for learn_rate as the following:
+Next, we specified the model. Below is an example of tuning learn_rate. We created a grid of 10 values to try in tuning for learn_rate as the following.
 
 ```{r}
 boost_spec <- boost_tree(
@@ -683,7 +696,7 @@ collect_metrics(pollution_rfTUNE)
 
 After we had our set of candidate models (9 random forest, 20 lasso, and 10 boost), we started stacking. We followed the process laid out on the stacks webpage.
 
-First, we created the stack. Shown by the number of columns, it removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
+First, we created the stack. Automatically, it removed some of the lasso models, likely since they were too similar to other lasso models. The set of candidate models now has 9 random forest, 9 lasso, and 9 boost.
 
 ```{r}
 pollution_stack <- 
@@ -757,6 +770,8 @@ pollution_final_stack %>%
        y = "Predicted log(asthma)")
 ```
 
+Testing rmse:
+
 ```{r}
 data_rmse <- pollution_final_stack %>% 
   predict(new_data = pollution_testing) %>% 
@@ -771,3 +786,11 @@ One major limitation with this project was the lack of data available. While we 
 
 If we only look at the visualizations displayed in the Shiny app, it is possible to come to conclusions that in reality do not make sense. For example, there seems to be a negative relationship between asthma ER visits and mean annual particulate matter 2.5, despite an extensive body of research and logic that indicate an opposite relationship. That is to say, because we have limited data from a certain area and many other factors play important roles affecting asthma, we should limit conclusions from examining the plots alone.
 It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education. 
+
+# Outcomes/Future Directions
+
+The models created in this project were able to predict the chosen outcome variables with a fair amount of accuracy. A next step would be to focus on more interpretable machine learning, specifically creating an interactive ceteris paribus profile to easily visualize the exact impacts of each variable on the predictor.
+
+The dataset we created contains numerous other health outcomes, each of which could be the subject of its own model with relatively little additional work. We chose to model the outcomes that we did because of previous research tying them to environmental factors, but it would be interesting to look for connections for the other variables as well.
+
+Additionally, it would be useful to add more predictors to the dataset, especially those focused on the race and age distributions of each county. Those are currently missing from the dataset we built but are known risk factors for many health outcomes, so adding them may help to reveal any potentially confounding variables. 
