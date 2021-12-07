@@ -652,7 +652,7 @@ pollution_rfrecipe %>%
   juice()
 ```
 
-Set the 
+Create the model using regressions and ranger as the engine. 
 ```{r}
 ranger_pollution <- 
   rand_forest(mtry = tune(), 
@@ -662,6 +662,7 @@ ranger_pollution <-
   set_engine("ranger")
 ```
 
+Set up workflow with the recipe and random forest model made above. 
 ```{r}
 pollution_rfworkflow <- 
   workflow() %>% 
@@ -669,8 +670,9 @@ pollution_rfworkflow <-
   add_model(ranger_pollution) 
 ```
 
+Set up penalty grid model.
+
 ```{r}
-# Set up penalty grid model 
 rf_penalty_grid <- grid_regular(finalize(mtry(),
                                          pollution_training %>%
                                            select(-log_asthma)),
@@ -678,12 +680,12 @@ rf_penalty_grid <- grid_regular(finalize(mtry(),
                                 levels = 3)
 ```
 
+Tuned the model and determine the best RMSE. 
 ```{r}
 set.seed(456) 
 
 pollution_cv <- vfold_cv(pollution_training, v = 5) 
 
-# Tune model
 pollution_rfTUNE <- 
   pollution_rfworkflow %>% 
   tune_grid(
@@ -697,35 +699,27 @@ best_rmse <-
   select_best(metric = "rmse")
 
 best_rmse
-
-pol_rfFinal <- pollution_rfworkflow %>%
-  finalize_workflow(best_rmse) %>%
-  fit(data = pollution_training)
 ```
 
+Fitting model to testing data.
+
+```{r}
+pol_rfFinal <- pollution_rfworkflow %>%
+  finalize_workflow(best_rmse) %>%
+  fit(data = pollution_testing)
+```
+
+Finding the OOB RMSE of the testing data. 
 ```{r}
 # OOB error (MSE)
 pol_rfFinal$fit$fit$fit$prediction.error
 
 # OOB RMSE
 sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
+
+
 ```
 
-```{r, eval=FALSE}
-set.seed(456)
-
-metric <- metric_set(rmse) 
-ctrl_res <- control_stack_resamples() 
-
-pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resamples(pollution_cv, 
-               metrics = metric, 
-               control = ctrl_res) 
-
-collect_metrics(pollution_rfTUNE)
-```
-
-> not working
 
 ## Stacking
 
