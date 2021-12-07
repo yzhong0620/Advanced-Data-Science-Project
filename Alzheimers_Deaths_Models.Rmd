@@ -59,7 +59,7 @@ for(i in 1:ncol(pollution)) {
 
 ```{r}
 pollution_mod <- pollution %>%
-  mutate(log_alzheimers = log(Alzheimer.s.disease, base = 10)) %>% 
+  mutate(log_alzheimers = Alzheimer.s.disease) %>% 
   filter(log_alzheimers != "-Inf") %>% 
   select(-Alzheimer.s.disease) %>% 
   mutate(across(where(is.character), as.factor)) %>% 

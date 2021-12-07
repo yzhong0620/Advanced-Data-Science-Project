@@ -14,9 +14,9 @@ library(tidyverse)
 library(dplyr)
 ```
 
-```{r}
-ca_pop <- read_csv("ca_county_est.csv") %>% 
-  mutate(County = ifelse(County == "Humbolt", "Humboldt", County))
+```{r, eval=FALSE}
+# ca_pop <- read_csv("ca_county_est.csv") %>% 
+#   mutate(County = ifelse(County == "Humbolt", "Humboldt", County))
 ```
 
 ```{r}
