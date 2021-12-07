@@ -266,6 +266,10 @@ The dataset has 153 observations of 64 variables in total. 75% (114 observations
 
 ## Lasso Model
 
+In modeling our data, we decided to look at five different machine learning techniques to determine the best model to predict the health outcomes due to environmental and socioeconomic models.
+
+Lasso model uses both dimension reduction and variable selection in determining the best predictors for the outcomes. We preprocessed the data for the lasso model and removed some variables and normalized the rest of the predictors. 
+
 ```{r}
 pollution_recipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
   step_rm(County,
@@ -305,11 +309,15 @@ pollution_recipe <- recipe(log_asthma ~ ., data = pollution_training) %>%
              -all_outcomes())
 ```
 
+Then applied it to our training data.
+
 ```{r}
 pollution_recipe %>% 
   prep(pollution_training) %>%
   juice()
 ```
+
+To define the model we chose linear regression and other arguments to fit the model.
 
 ```{r}
 pollution_lasso_mod <- 
@@ -318,6 +326,8 @@ pollution_lasso_mod <-
   set_args(penalty = tune()) %>% 
   set_mode("regression")
 ```
+
+We then created a workflow with our recipe and defined model. 
 
 ```{r}
 pollution_lasso_wf <- 
@@ -330,6 +340,8 @@ pollution_lasso_wf <-
 penalty_grid <- grid_regular(penalty(),
                              levels = 20)
 ```
+
+We then tuned the model using a penalty grid and determined our number of resamples. 
 
 ```{r}
 ctrl_grid <- control_stack_grid()
@@ -346,6 +358,10 @@ pollution_lasso_tune <-
     )
 ```
 
+Looked at the RMSE of the model output to determine the best model to use on the testing data. 
+
+We then visualized the RMSE as a function of the penalty value.
+
 ```{r}
 pollution_lasso_tune %>% 
   collect_metrics() %>% 
@@ -358,6 +374,8 @@ pollution_lasso_tune %>%
    labels = scales::trans_format("log10",scales::math_format(10^.x))) +
   labs(x = "penalty", y = "rmse")
 ```
+
+We used the show_best() and select_best() functions to select the best model.
 
 ```{r}
 pollution_lasso_tune %>% 
@@ -376,10 +394,14 @@ one_se_param <- pollution_lasso_tune %>%
 one_se_param
 ```
 
+We then finalized the workflow using the selected lasso model.
+
 ```{r}
 pollution_lasso_final_wf <- pollution_lasso_wf %>% 
   finalize_workflow(one_se_param)
 ```
+
+Using this finalized workflow, we fit the data to the training data and visulized the estimate values f
 
 ```{r}
 pollution_lasso_final_mod <- pollution_lasso_final_wf %>% 
@@ -390,6 +412,8 @@ pollution_lasso_final_mod %>%
   tidy() %>% 
   mutate(across(where(is.numeric), ~round(.x,3)))
 ```
+
+We then looked at the evaluation metrics across all folds.  
 
 ```{r}
 pollution_lasso_test <- pollution_lasso_final_wf %>% 
@@ -573,6 +597,8 @@ test_preds %>%
 
 ## Random Forest Model
 
+We set up the random forest model with its recipe and preprocessing steps.
+
 ```{r}
 pollution_rfrecipe <- recipe(log_asthma ~ ., data = pollution_training) %>% 
   step_rm(County,
@@ -612,11 +638,15 @@ pollution_rfrecipe <- recipe(log_asthma ~ ., data = pollution_training) %>%
              -all_outcomes())
 ```
 
+Applied the recipe to the training data. 
+
 ```{r}
 pollution_rfrecipe %>% 
   prep(pollution_training) %>%
   juice()
 ```
+
+Create the model using regressions and ranger as the engine. 
 
 ```{r}
 ranger_pollution <- 
@@ -627,12 +657,16 @@ ranger_pollution <-
   set_engine("ranger")
 ```
 
+Set up workflow with the recipe and random forest model made above. 
+
 ```{r}
 pollution_rfworkflow <- 
   workflow() %>% 
   add_recipe(pollution_rfrecipe) %>% 
   add_model(ranger_pollution) 
 ```
+
+Set up penalty grid model.
 
 ```{r}
 # Set up penalty grid model 
@@ -642,6 +676,8 @@ rf_penalty_grid <- grid_regular(finalize(mtry(),
                                 min_n(),
                                 levels = 3)
 ```
+
+Tuned the model and determine the best RMSE.
 
 ```{r}
 set.seed(456) 
@@ -662,11 +698,17 @@ best_rmse <-
   select_best(metric = "rmse")
 
 best_rmse
+```
 
+Fitting model to testing data.
+
+```{r}
 pol_rfFinal <- pollution_rfworkflow %>%
   finalize_workflow(best_rmse) %>%
   fit(data = pollution_training)
 ```
+
+Finding the OOB RMSE of the testing data.
 
 ```{r}
 # OOB error (MSE)
@@ -690,7 +732,10 @@ pollution_rfcv <- pollution_rfworkflow %>%
 collect_metrics(pollution_rfTUNE)
 ```
 
-> not working
+```{r}
+prediction_rf <- predict(pol_rfFinal, pollution_testing)
+prediction_rf
+```
 
 ## Stacking
 
