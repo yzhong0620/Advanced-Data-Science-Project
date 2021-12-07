@@ -3,7 +3,7 @@ title: "External Blog"
 author: "Mia Rothberg, Kate Seeger, and Yunyang Zhong"
 date: "12/3/2021"
 output: html_document
-runtime: shiny
+# runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -102,7 +102,7 @@ transformed_data_with_data <- data_with_coordinates %>%
 
 ```
 
-```{r}
+```{r, echo=FALSE, eval=FALSE}
 shinyApp(
     ui <- fluidPage(
     theme = bs_theme(primary = "#ADD8E6", 
@@ -687,7 +687,7 @@ pol_rfFinal$fit$fit$fit$prediction.error
 sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
 ```
 
-```{r}
+```{r, eval=FALSE}
 set.seed(456)
 
 metric <- metric_set(rmse) 
@@ -700,6 +700,8 @@ pollution_rfcv <- pollution_rfworkflow %>%
 
 collect_metrics(pollution_rfTUNE)
 ```
+
+> not working
 
 ## Stacking
 
