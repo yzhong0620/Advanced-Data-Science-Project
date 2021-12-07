@@ -706,7 +706,7 @@ Fitting model to testing data.
 ```{r}
 pol_rfFinal <- pollution_rfworkflow %>%
   finalize_workflow(best_rmse) %>%
-  fit(data = pollution_testing)
+  fit(data = pollution_training)
 ```
 
 Finding the OOB RMSE of the testing data. 
@@ -719,6 +719,11 @@ sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
 
 
 ```
+```{r}
+prediction_rf <- predict(pol_rfFinal, pollution_testing)
+prediction_rf
+```
+
 
 
 ## Stacking
