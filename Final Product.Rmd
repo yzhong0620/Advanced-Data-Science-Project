@@ -765,6 +765,9 @@ data_rmse <- pollution_final_stack %>%
 rmse(data_rmse$log_asthma, data_rmse$.pred)
 ```
 
-```{r, eval=FALSE}
-write_rds(pollution_final_stack, "asthma_model_final.rds")
-```
+# Limitations, Troubleshooting, and Potential Repercussions
+
+One major limitation with this project was the lack of data available. While we initially knew we wanted to focus on the relationship between air pollutants and various health outcomes, we chose to focus solely on California because that was the data that was available. We could only find limited data on air pollutants, so expanded our dataset to include data that we could find on socioeconomic variables. Additionally, many of the air pollutants had missing values, and we found that our dataset only had 13 complete cases that our models were being based on. To deal with this, we filled in all the NA values with the median value for each variable. This likely weakens the models, though they were still fairly strong.
+
+If we only look at the visualizations displayed in the Shiny app, it is possible to come to conclusions that in reality do not make sense. For example, there seems to be a negative relationship between asthma ER visits and mean annual particulate matter 2.5, despite an extensive body of research and logic that indicate an opposite relationship. That is to say, because we have limited data from a certain area and many other factors play important roles affecting asthma, we should limit conclusions from examining the plots alone.
+It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education. 
