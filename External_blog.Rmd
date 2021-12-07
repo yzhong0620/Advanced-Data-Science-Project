@@ -709,7 +709,7 @@ pol_rfFinal <- pollution_rfworkflow %>%
   fit(data = pollution_testing)
 ```
 
-Finding the OOB RMSE of the testing data
+Finding the OOB RMSE of the testing data. 
 ```{r}
 # OOB error (MSE)
 pol_rfFinal$fit$fit$fit$prediction.error
@@ -720,21 +720,6 @@ sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
 
 ```
 
-```{r, eval=FALSE}
-set.seed(456)
-
-metric <- metric_set(rmse) 
-ctrl_res <- control_stack_resamples() 
-
-pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resamples(pollution_cv, 
-               metrics = metric, 
-               control = ctrl_res) 
-
-collect_metrics(pollution_rfTUNE)
-```
-
-> not working
 
 ## Stacking
 
