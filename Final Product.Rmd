@@ -64,6 +64,10 @@ Data for this project was collected from a wide variety of sources, most of whic
 Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset.
 
 ```{r}
+knitr::include_app("https://miarothberg.shinyapps.io/Final_Project/", height = "600px")
+```
+
+```{r}
 data <- read_csv("data_standardized.csv") %>% 
   mutate(fips = FIPS) %>% 
   select(-FIPS)
