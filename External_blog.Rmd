@@ -709,21 +709,31 @@ pol_rfFinal <- pollution_rfworkflow %>%
   fit(data = pollution_training)
 ```
 
-Finding the OOB RMSE of the testing data. 
+Finding the RMSE of the testing data. 
+
+
 ```{r}
-# OOB error (MSE)
-pol_rfFinal$fit$fit$fit$prediction.error
+predictions_rf <- pollution_testing %>% 
+  select(log_asthma) %>% 
+  bind_cols(predict(pol_rfFinal, new_data = pollution_testing))
 
-# OOB RMSE
-sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
-
-
-```
-```{r}
-prediction_rf <- predict(pol_rfFinal, pollution_testing)
-prediction_rf
+predictions_rf %>%
+  summarize(training_rmse = sqrt(mean((log_asthma - .pred)^2)))
 ```
 
+```{r}
+predictions_rf %>% 
+  ggplot(aes(x = log_asthma,
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
+```
 
 
 ## Stacking
