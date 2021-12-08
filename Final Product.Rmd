@@ -358,7 +358,8 @@ pollution_lasso_tune <-
     )
 ```
 
-Looked at the RMSE of the model output to determine the best model to use on the testing data. 
+Looked at the RMSE of the model output to determine the best model to use on the testing data. We measured the effectiveness of each model created with their root mean squared error (RMSE). This is the “typical residual” of each value, calculated by taking the square root of the average of the squared residuals. It has the same units as the outcome variable for each model.
+
 
 We then visualized the RMSE as a function of the penalty value.
 
@@ -831,6 +832,8 @@ One major limitation with this project was the lack of data available. While we 
 
 If we only look at the visualizations displayed in the Shiny app, it is possible to come to conclusions that in reality do not make sense. For example, there seems to be a negative relationship between asthma ER visits and mean annual particulate matter 2.5, despite an extensive body of research and logic that indicate an opposite relationship. That is to say, because we have limited data from a certain area and many other factors play important roles affecting asthma, we should limit conclusions from examining the plots alone.
 It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education. 
+
+It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education.
 
 # Outcomes/Future Directions
 
