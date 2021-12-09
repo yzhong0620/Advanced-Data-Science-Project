@@ -837,9 +837,9 @@ The final plot, which shows the blue line of the predicted values nearly match t
 
 We created models in the same way for three other variables, which you can read about in the links below:
 
-* Alzheimer's disease death rate - [here]
-* Breast cancer surgery rate - [here]
-* Heart disease death rate - [here]
+* Alzheimer's disease death rate - [here](https://alzheimers-models.netlify.app/)
+* Breast cancer surgery rate - [here](https://breast-cancer-models.netlify.app/)
+* Heart disease death rate - [here](https://heart-disease-models.netlify.app/)
 
 Overall, the Alzheimer's disease death rate model was most effective at predicting the outcome variable and the breast cancer surgery rate model was the least effective. This suggests that many of the factors that worsen Alzheimer's disease were present in our dataset but that it was missing factors that contribute to breast cancer. This makes sense, as breast cancer has been shown to be hereditary.
 
