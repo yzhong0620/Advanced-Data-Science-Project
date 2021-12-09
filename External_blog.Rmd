@@ -50,7 +50,11 @@ Data for this project was collected from a wide variety of sources, most of whic
 
 ## Data Exploration
 
-Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset.
+Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset. If it doesn't load, access it [here](https://miarothberg.shinyapps.io/Final_Project/).
+
+```{r}
+knitr::include_app("https://miarothberg.shinyapps.io/Final_Project/", height = "600px")
+```
 
 ```{r}
 data <- read_csv("data_standardized.csv") %>% 
@@ -210,7 +214,7 @@ Long term exposure to air pollutants has been shown to contribute to cognitive d
 
 Finally, research using an EPA dataset has established that long-term exposure to particulate matter and nitrogen oxides at levels close to the National Ambient Air Quality Standards can prematurely age blood vessels and contribute to a more rapid buildup of calcium in the coronary artery, [leading to heart disease](https://www.thelancet.com/journals/lancet/article/PIIS0140-6736%2816%2900378-0/fulltext).
 
-# Modeling
+# Modeling Asthma ER Visits
 
 ```{r}
 pollution <- read.csv("data_standardized.csv")
@@ -411,7 +415,9 @@ pollution_lasso_final_wf <- pollution_lasso_wf %>%
   finalize_workflow(one_se_param)
 pollution_lasso_final_wf
 ```
-Using this finalized workflow, we fit the data to the training data and visulized the estimate values f
+
+Using this finalized workflow, we fit the data to the training data and visualized the estimate values.
+
 ```{r}
 pollution_lasso_final_mod <- pollution_lasso_final_wf %>% 
   fit(data = pollution_training)
@@ -420,6 +426,7 @@ pollution_lasso_final_mod %>%
   pull_workflow_fit() %>% 
   tidy() 
 ```
+
 We then looked at the evaluation metrics across all folds.  
 
 ```{r}
@@ -824,6 +831,32 @@ data_rmse <- pollution_final_stack %>%
 rmse(data_rmse$log_asthma, data_rmse$.pred)
 ```
 
-```{r, eval=FALSE}
-write_rds(pollution_final_stack, "asthma_model_final.rds")
-```
+The final plot, which shows the blue line of the predicted values nearly match the red line of the ideal values, and the low RMSE show that this model was fairly effective.
+
+## Modeling Other Variables
+
+We created models in the same way for three other variables, which you can read about in the links below:
+
+* Alzheimer's disease death rate - [here]
+* Breast cancer surgery rate - [here]
+* Heart disease death rate - [here]
+
+Overall, the Alzheimer's disease death rate model was most effective at predicting the outcome variable and the breast cancer surgery rate model was the least effective. This suggests that many of the factors that worsen Alzheimer's disease were present in our dataset but that it was missing factors that contribute to breast cancer. This makes sense, as breast cancer has been shown to be hereditary.
+
+# Limitations, Troubleshooting, and Potential Repercussions
+
+One major limitation with this project was the lack of data available. While we initially knew we wanted to focus on the relationship between air pollutants and various health outcomes, we chose to focus solely on California because that was the data that was available. We could only find limited data on air pollutants, so expanded our dataset to include data that we could find on socioeconomic variables. Additionally, many of the air pollutants had missing values, and we found that our dataset only had 13 complete cases that our models were being based on. To deal with this, we filled in all the NA values with the median value for each variable. This likely weakens the models, though they were still fairly strong.
+
+If we only look at the visualizations displayed in the Shiny app, it is possible to come to conclusions that in reality do not make sense. For example, there seems to be a negative relationship between asthma ER visits and mean annual particulate matter 2.5, despite an extensive body of research and logic that indicate an opposite relationship. That is to say, because we have limited data from a certain area and many other factors play important roles affecting asthma, we should limit conclusions from examining the plots alone.
+It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education. 
+
+It is also important to keep in mind that these models are not predicting health outcomes for any given individual; they are predicting the per person rate of the health outcome in each county. The models should not be used to determine insurance rates, but they could be used as the basis for policies that, for example, lower air pollutant limits or advocate for more accessible education.
+
+# Outcomes/Future Directions
+
+The models created in this project were able to predict the chosen outcome variables with a fair amount of accuracy. A next step would be to focus on more interpretable machine learning, specifically creating an interactive ceteris paribus profile to easily visualize the exact impacts of each variable on the predictor.
+
+The dataset we created contains numerous other health outcomes, each of which could be the subject of its own model with relatively little additional work. We chose to model the outcomes that we did because of previous research tying them to environmental factors, but it would be interesting to look for connections for the other variables as well.
+
+Additionally, it would be useful to add more predictors to the dataset, especially those focused on the race and age distributions of each county. Those are currently missing from the dataset we built but are known risk factors for many health outcomes, so adding them may help to reveal any potentially confounding variables. 
+
