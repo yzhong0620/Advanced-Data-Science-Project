@@ -386,7 +386,9 @@ pollution_lasso_tune %>%
    labels = scales::trans_format("log10",scales::math_format(10^.x))) +
   labs(x = "penalty", y = "rmse")
 ```
+
 We used the show_best() and select_best() functions to select the best model.
+
 ```{r}
 pollution_lasso_tune %>% 
   show_best(metric = "rmse")
