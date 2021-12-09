@@ -2,7 +2,9 @@
 title: "External Blog"
 author: "Mia Rothberg, Kate Seeger, and Yunyang Zhong"
 date: "12/3/2021"
-output: html_document
+output:
+  html_document:
+    code_download: true
 # runtime: shiny
 ---
 
