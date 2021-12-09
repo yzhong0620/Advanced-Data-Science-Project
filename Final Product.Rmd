@@ -682,7 +682,7 @@ rf_penalty_grid <- grid_regular(finalize(mtry(),
                                 levels = 3)
 ```
 
-Tuned the model and determine the best RMSE.
+Tuned the model and determine the most accurate model.
 
 ```{r}
 set.seed(456) 
@@ -697,7 +697,11 @@ pollution_rfTUNE <-
     grid = rf_penalty_grid,
     control = ctrl_grid
   )
+```
 
+Finding model with best RMSE.
+
+```{r}
 best_rmse <- 
   pollution_rfTUNE %>%
   select_best(metric = "rmse")
@@ -705,41 +709,50 @@ best_rmse <-
 best_rmse
 ```
 
-Fitting model to testing data.
+Fitting model to training data.
 
 ```{r}
 pol_rfFinal <- pollution_rfworkflow %>%
   finalize_workflow(best_rmse) %>%
   fit(data = pollution_training)
+pol_rfFinal
 ```
-
-Finding the OOB RMSE of the testing data.
+Finding rmse on training data. 
 
 ```{r}
-# OOB error (MSE)
-pol_rfFinal$fit$fit$fit$prediction.error
+predictions_rftrain <- pollution_training %>% 
+  select(log_asthma) %>% 
+  bind_cols(predict(pol_rfFinal, new_data = pollution_training))
 
-# OOB RMSE
-sqrt(pol_rfFinal$fit$fit$fit$prediction.error)
+predictions_rftrain %>%
+  summarize(training_rmse = sqrt(mean((log_asthma - .pred)^2)))
 ```
 
-```{r, eval=FALSE}
-set.seed(456)
-
-metric <- metric_set(rmse) 
-ctrl_res <- control_stack_resamples() 
-
-pollution_rfcv <- pollution_rfworkflow %>%
-  fit_resamples(pollution_cv, 
-               metrics = metric, 
-               control = ctrl_res) 
-
-collect_metrics(pollution_rfTUNE)
-```
+RMSE on the testing data is higher than on the training data, which is to be expected. 
 
 ```{r}
-prediction_rf <- predict(pol_rfFinal, pollution_testing)
-prediction_rf
+predictions_rf <- pollution_testing %>% 
+  select(log_asthma) %>% 
+  bind_cols(predict(pol_rfFinal, new_data = pollution_testing))
+
+predictions_rf %>%
+  summarize(testing_rmse = sqrt(mean((log_asthma - .pred)^2)))
+```
+
+Predicted values from RF model on testing data. We can see that this model predicts fairly accurately.
+
+```{r}
+predictions_rf %>% 
+  ggplot(aes(x = log_asthma,
+             y = .pred)) +
+  geom_point(alpha = .5, 
+             size = .5) +
+  geom_smooth(se = FALSE) +
+  geom_abline(slope = 1, 
+              intercept = 0, 
+              color = "darkred") +
+  labs(x = "Actual log(asthma)", 
+       y = "Predicted log(asthma)")
 ```
 
 ## Stacking
