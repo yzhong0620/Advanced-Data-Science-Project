@@ -61,7 +61,7 @@ Data for this project was collected from a wide variety of sources, most of whic
 
 ## Data Exploration
 
-Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset.
+Use the interactive graphic below to explore the relationships between the predictors and outcomes in our dataset. If it doesn't load, access it [here](https://miarothberg.shinyapps.io/Final_Project/).
 
 ```{r}
 knitr::include_app("https://miarothberg.shinyapps.io/Final_Project/", height = "600px")
